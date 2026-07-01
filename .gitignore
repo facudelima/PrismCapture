@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Xcode
+DerivedData/
+.derivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+timeline.xctimeline
+playground.xcworkspace
+
+# Build artifacts / releases
+dist/
+*.app
+!docs/**/*.app
+PrismCapture-*.zip
+PrismCapture-*.dmg
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Secrets / local
+.env
+.env.*
+*.pem
+Secrets.xcconfig
+
+# Misc
+*.log
+.idea/
+.vscode/
