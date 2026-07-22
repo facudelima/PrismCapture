@@ -175,6 +175,9 @@ final class OverlayWindowController {
     private var overlayWindow: SelectionOverlayWindow?
     private var editorWindow: NSWindow?
     private var countdownWindow: NSWindow?
+    /// Esc / shortcuts must work even before the canvas receives focus (SwiftUI `.onKeyPress` alone is flaky).
+    private var editorKeyMonitor: Any?
+    private var editorCancelTextEdit: (() -> Bool)?
 
     func showSelectionOverlay(viewModel: CaptureViewModel) {
         closeOverlay()
@@ -256,14 +259,23 @@ final class OverlayWindowController {
     }
 
     func closeOverlay() {
+        removeEditorKeyMonitor()
+        editorCancelTextEdit = nil
         overlayWindow?.orderOut(nil)
         overlayWindow = nil
     }
 
     func showInPlaceEditor(image: NSImage, pinRect: CGRect, captureVM: CaptureViewModel) {
         closeEditor()
+        removeEditorKeyMonitor()
 
         let annotationVM = AnnotationViewModel(image: image, canvasSize: pinRect.size)
+        editorCancelTextEdit = { [weak annotationVM] in
+            guard let annotationVM, annotationVM.isEditingText else { return false }
+            annotationVM.cancelTextEdit()
+            return true
+        }
+
         let root = InPlaceEditorView(
             annotationVM: annotationVM,
             captureVM: captureVM,
@@ -296,12 +308,39 @@ final class OverlayWindowController {
         window.setFrame(overlayFrame, display: true)
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(hosting)
         NSApp.activate(ignoringOtherApps: true)
+        installEditorKeyMonitor()
     }
 
     func closeInPlaceEditor(copyIfNeeded: Bool) {
+        removeEditorKeyMonitor()
+        editorCancelTextEdit = nil
         closeOverlay()
         closeEditor()
+    }
+
+    private func installEditorKeyMonitor() {
+        removeEditorKeyMonitor()
+        editorKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            // Escape — always dismiss editor (or cancel in-progress text edit).
+            if event.keyCode == 53 {
+                if self.editorCancelTextEdit?() == true {
+                    return nil
+                }
+                self.closeInPlaceEditor(copyIfNeeded: false)
+                return nil
+            }
+            return event
+        }
+    }
+
+    private func removeEditorKeyMonitor() {
+        if let editorKeyMonitor {
+            NSEvent.removeMonitor(editorKeyMonitor)
+            self.editorKeyMonitor = nil
+        }
     }
 
     func showEditor(image: NSImage, viewModel: CaptureViewModel) {

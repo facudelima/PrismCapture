@@ -12,6 +12,7 @@ struct InPlaceEditorView: View {
     @State private var isMovingPin = false
     @State private var recaptureTask: Task<Void, Never>?
     @State private var recaptureToken = 0
+    @FocusState private var editorFocused: Bool
 
     init(annotationVM: AnnotationViewModel, captureVM: CaptureViewModel, pinRect: CGRect) {
         self.annotationVM = annotationVM
@@ -76,6 +77,11 @@ struct InPlaceEditorView: View {
         )
         .preferredColorScheme(settings.theme.colorScheme)
         .focusable()
+        .focused($editorFocused)
+        .onAppear {
+            // Ensure SwiftUI key handlers work even before clicking/moving the pin.
+            editorFocused = true
+        }
         .onKeyPress(keys: [.init("c")]) { press in
             guard press.modifiers.contains(.command) else { return .ignored }
             copyAndClose()
