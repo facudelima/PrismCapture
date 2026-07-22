@@ -25,6 +25,7 @@
 		E8098EFBAA5834E45A007158 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1FCBFD3FFCB54698BCAC550 /* OverlayWindowController.swift */; };
 		EDAA5298857234A848135D7B /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE310298D7A4744DD9677DA3 /* PermissionService.swift */; };
 		E23CA3548272548A493320B5 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB38B4715DDC142A9B829761 /* UploadService.swift */; };
+		E7A1B2C3D4E5F60718293A4B /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A1B2C3D4E5F60718293A4C /* UpdateService.swift */; };
 		E509B77D5C7044276BBC70FA /* AnimationPrism.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D08D8E2A25645CF82DFE0E /* AnimationPrism.swift */; };
 		E373B67E69A5541E7B87F1CF /* CGImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F7E0308F019477C88C3B8B /* CGImageExtensions.swift */; };
 		E4BCE82ECB3CF4B979693444 /* NSImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1436985D2A994C768F7BD5C /* NSImageExtensions.swift */; };
@@ -69,6 +70,7 @@
 		E1FCBFD3FFCB54698BCAC550 /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OverlayWindowController.swift; path = "Services/OverlayWindowController.swift"; sourceTree = "<group>"; };
 		EE310298D7A4744DD9677DA3 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PermissionService.swift; path = "Services/PermissionService.swift"; sourceTree = "<group>"; };
 		EB38B4715DDC142A9B829761 /* UploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UploadService.swift; path = "Services/UploadService.swift"; sourceTree = "<group>"; };
+		E7A1B2C3D4E5F60718293A4C /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UpdateService.swift; path = "Services/UpdateService.swift"; sourceTree = "<group>"; };
 		E0D08D8E2A25645CF82DFE0E /* AnimationPrism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationPrism.swift; path = "Utilities/AnimationPrism.swift"; sourceTree = "<group>"; };
 		E1F7E0308F019477C88C3B8B /* CGImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CGImageExtensions.swift; path = "Utilities/CGImageExtensions.swift"; sourceTree = "<group>"; };
 		E1436985D2A994C768F7BD5C /* NSImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NSImageExtensions.swift; path = "Utilities/NSImageExtensions.swift"; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 				E1FCBFD3FFCB54698BCAC550 /* OverlayWindowController.swift */,
 				EE310298D7A4744DD9677DA3 /* PermissionService.swift */,
 				EB38B4715DDC142A9B829761 /* UploadService.swift */,
+				E7A1B2C3D4E5F60718293A4C /* UpdateService.swift */,
 				E0D08D8E2A25645CF82DFE0E /* AnimationPrism.swift */,
 				E1F7E0308F019477C88C3B8B /* CGImageExtensions.swift */,
 				E1436985D2A994C768F7BD5C /* NSImageExtensions.swift */,
@@ -253,6 +256,7 @@
 				E8098EFBAA5834E45A007158 /* OverlayWindowController.swift in Sources */,
 				EDAA5298857234A848135D7B /* PermissionService.swift in Sources */,
 				E23CA3548272548A493320B5 /* UploadService.swift in Sources */,
+				E7A1B2C3D4E5F60718293A4B /* UpdateService.swift in Sources */,
 				E509B77D5C7044276BBC70FA /* AnimationPrism.swift in Sources */,
 				E373B67E69A5541E7B87F1CF /* CGImageExtensions.swift in Sources */,
 				E4BCE82ECB3CF4B979693444 /* NSImageExtensions.swift in Sources */,
@@ -377,7 +381,7 @@
 				CODE_SIGN_ENTITLEMENTS = PrismCapture/PrismCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PrismCapture/Info.plist;
@@ -389,7 +393,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.prismcapture.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -405,7 +409,7 @@
 				CODE_SIGN_ENTITLEMENTS = PrismCapture/PrismCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PrismCapture/Info.plist;
@@ -417,7 +421,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.prismcapture.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
