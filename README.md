@@ -13,9 +13,7 @@ App nativa de capturas para macOS, inspirada en Lightshot / CleanShot X.
 
 Requiere **macOS 14+** y permiso de **Grabación de pantalla**.
 
-### Actualizaciones
-
-La app muestra la versión en el menú bar y en **Ajustes → Actualizaciones**. Puede buscar la última release en GitHub e instalarla. Como el repo es privado, usa el token de Keychain (`github.com`) o un PAT en Ajustes.
+La versión instalada se muestra en el menú bar y en Ajustes → Acerca de.
 
 ## Requisitos (desarrollo)
 

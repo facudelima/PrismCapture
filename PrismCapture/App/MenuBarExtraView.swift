@@ -5,9 +5,13 @@ struct MenuBarExtraView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.colorScheme) private var colorScheme
-    @StateObject private var updates = UpdateService.shared
     @State private var hoveredAction: String?
     @State private var permissionOK = false
+
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        return "v\(v)"
+    }
 
     private var menuChrome: Color {
         colorScheme == .dark
@@ -21,8 +25,6 @@ struct MenuBarExtraView: View {
             Divider().opacity(0.35).padding(.vertical, 8)
             captureSection
             Divider().opacity(0.35).padding(.vertical, 8)
-            updatesSection
-            Divider().opacity(0.35).padding(.vertical, 8)
             footer
         }
         .padding(14)
@@ -35,7 +37,6 @@ struct MenuBarExtraView: View {
         .padding(6)
         .task {
             permissionOK = await PermissionService.shared.canCaptureScreens()
-            await updates.checkForUpdates(silent: true)
         }
     }
 
@@ -55,7 +56,7 @@ struct MenuBarExtraView: View {
                     .foregroundStyle(permissionOK ? Color.secondary : Color.orange)
             }
             Spacer()
-            Text(updates.displayVersion)
+            Text(appVersion)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 7)
@@ -78,63 +79,6 @@ struct MenuBarExtraView: View {
             menuRow("Ventana", shortcut: settings.hotkeyWindow.displayString, icon: "macwindow") {
                 appState.captureWindow()
             }
-        }
-    }
-
-    private var updatesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(updateStatusTitle)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(updateStatusColor)
-                    .lineLimit(2)
-                Spacer(minLength: 4)
-            }
-            .padding(.horizontal, 4)
-
-            switch updates.status {
-            case .updateAvailable:
-                menuRow("Instalar actualización…", shortcut: nil, icon: "arrow.down.app") {
-                    Task { await updates.downloadAndInstall() }
-                }
-                menuRow("Ver en GitHub…", shortcut: nil, icon: "safari") {
-                    updates.openReleasesPage()
-                }
-            case .checking, .downloading, .installing:
-                EmptyView()
-            default:
-                menuRow("Buscar actualizaciones", shortcut: nil, icon: "arrow.triangle.2.circlepath") {
-                    Task { await updates.checkForUpdates(silent: false) }
-                }
-            }
-        }
-    }
-
-    private var updateStatusTitle: String {
-        switch updates.status {
-        case .idle:
-            return "Versión \(updates.currentVersion)"
-        case .checking:
-            return "Buscando actualizaciones…"
-        case .upToDate(let current, _):
-            return "v\(current) · Estás al día"
-        case .updateAvailable(let current, let latest, _, _):
-            return "v\(current) → v\(latest) disponible"
-        case .downloading(let progress):
-            return "Descargando… \(Int(progress * 100))%"
-        case .installing:
-            return "Instalando…"
-        case .error(let message):
-            return message
-        }
-    }
-
-    private var updateStatusColor: Color {
-        switch updates.status {
-        case .updateAvailable: return .orange
-        case .error: return .red
-        case .upToDate: return .secondary
-        default: return .secondary
         }
     }
 

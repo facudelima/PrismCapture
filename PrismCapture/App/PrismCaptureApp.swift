@@ -29,10 +29,5 @@ final class PrismAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         AppSettings.shared.applyAppearance()
-        Task { @MainActor in
-            // Quiet check a few seconds after launch.
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-            await UpdateService.shared.checkForUpdates(silent: true)
-        }
     }
 }
