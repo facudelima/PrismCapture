@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Build PrismCapture.app (Release) and zip it for GitHub Releases.
+# Re-signs with Apple Development when available so TCC (Screen Recording) survives updates.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,10 +15,23 @@ APP_NAME="PrismCapture"
 ZIP_NAME="${APP_NAME}-${VERSION}-macos.zip"
 LOG_FILE="${OUT_DIR}/xcodebuild.log"
 
+SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-}"
+if [[ -z "${SIGN_IDENTITY}" || "${SIGN_IDENTITY}" == "-" ]]; then
+  SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' \
+    | head -1 || true)"
+fi
+if [[ -z "${SIGN_IDENTITY}" ]]; then
+  SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | sed -n 's/.*"\(Apple Development:[^"]*\)".*/\1/p' \
+    | head -1 || true)"
+fi
+
 rm -rf "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
 echo "→ Building Release…"
+# Archive unsigned/ad-hoc first (Xcode archive + Apple Development cert pairing is flaky for macOS).
 set +e
 xcodebuild \
   -project PrismCapture.xcodeproj \
@@ -39,7 +53,6 @@ if [[ ${BUILD_STATUS} -ne 0 ]]; then
   exit "${BUILD_STATUS}"
 fi
 
-# Prefer archive product; fall back to built .app
 APP_SRC=""
 if [[ -d "${ARCHIVE_PATH}/Products/Applications/${APP_NAME}.app" ]]; then
   APP_SRC="${ARCHIVE_PATH}/Products/Applications/${APP_NAME}.app"
@@ -54,8 +67,15 @@ fi
 
 cp -R "${APP_SRC}" "${OUT_DIR}/${APP_NAME}.app"
 
-# Ad-hoc sign for local distribution (Gatekeeper still may warn without Developer ID + notarization)
-codesign --force --deep --sign - "${OUT_DIR}/${APP_NAME}.app" 2>/dev/null || true
+if [[ -n "${SIGN_IDENTITY}" ]]; then
+  echo "→ Signing with: ${SIGN_IDENTITY}"
+  codesign --force --deep --options runtime --sign "${SIGN_IDENTITY}" "${OUT_DIR}/${APP_NAME}.app"
+else
+  echo "→ No Development / Developer ID cert — leaving ad-hoc (TCC may reset on updates)"
+  codesign --force --deep --sign - "${OUT_DIR}/${APP_NAME}.app" 2>/dev/null || true
+fi
+
+codesign -dv --verbose=2 "${OUT_DIR}/${APP_NAME}.app" 2>&1 | grep -E '^(Authority|TeamIdentifier|Signature|Identifier)=' || true
 
 cd "${OUT_DIR}"
 ditto -c -k --sequesterRsrc --keepParent "${APP_NAME}.app" "${ZIP_NAME}"

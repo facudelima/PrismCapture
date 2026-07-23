@@ -173,11 +173,12 @@ final class UpdateService: ObservableObject {
         #!/bin/bash
         set -e
         sleep 1
-        /usr/bin/xattr -cr "\(appURL.path)" || true
-        /usr/bin/codesign --force --deep --sign - "\(appURL.path)" >/dev/null 2>&1 || true
+        # Clear quarantine only — do NOT re-sign (would break TCC / Screen Recording).
+        /usr/bin/xattr -dr com.apple.quarantine "\(appURL.path)" 2>/dev/null || true
+        /usr/bin/xattr -cr "\(appURL.path)" 2>/dev/null || true
         /bin/rm -rf "\(target.path)"
         /bin/cp -R "\(appURL.path)" "\(target.path)"
-        /usr/bin/xattr -cr "\(target.path)" || true
+        /usr/bin/xattr -dr com.apple.quarantine "\(target.path)" 2>/dev/null || true
         /usr/bin/open "\(target.path)"
         /bin/rm -rf "\(extractDir.path)" "\(zipURL.path)"
         """
