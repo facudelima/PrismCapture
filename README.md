@@ -53,8 +53,6 @@ La app vive en la barra de menú (`LSUIElement`).
 |-------|--------|
 | ⌘⇧2 | Capturar área |
 | ⌘⇧3 | Pantalla completa |
-| ⌘⇧4 | Ventana |
-| Space | Alternar modo ventana en el overlay |
 | ⌘C | Copiar |
 | ⌘S | Guardar |
 | Esc | Cancelar / cerrar |
