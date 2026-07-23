@@ -66,10 +66,10 @@ struct OCRResultPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Texto detectado", systemImage: "text.viewfinder")
+                Label("Detectar texto", systemImage: "text.viewfinder")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
-                GlassIconButton(systemName: "doc.on.doc", help: "Copiar") {
+                GlassIconButton(systemName: "doc.on.doc", help: "Copiar texto") {
                     ClipboardService.shared.copyText(text)
                 }
                 GlassIconButton(systemName: "xmark", help: "Cerrar") {

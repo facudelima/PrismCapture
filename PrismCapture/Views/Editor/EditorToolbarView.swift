@@ -54,6 +54,14 @@ struct EditorToolbarView: View {
 
             toolbarDivider
 
+            GlassIconButton(
+                systemName: viewModel.isOCRLoading ? "ellipsis" : "text.viewfinder",
+                help: "Detectar texto",
+                isDisabled: viewModel.isOCRLoading
+            ) {
+                Task { await viewModel.runOCR() }
+            }
+
             GlassIconButton(systemName: "doc.on.doc", help: "Copiar (⌘C)") {
                 ClipboardService.shared.copyImage(viewModel.renderedImage())
                 if settings.showToastOnCopy {
@@ -77,12 +85,6 @@ struct EditorToolbarView: View {
             }
 
             if !compact {
-                GlassIconButton(
-                    systemName: viewModel.isOCRLoading ? "ellipsis" : "text.viewfinder",
-                    help: "OCR"
-                ) {
-                    Task { await viewModel.runOCR() }
-                }
                 GlassIconButton(
                     systemName: viewModel.isUploading ? "arrow.triangle.2.circlepath" : "link",
                     help: "Subir y copiar URL",

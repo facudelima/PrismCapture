@@ -257,9 +257,69 @@ final class AnnotationViewModel: ObservableObject {
 
     func endStroke() {
         guard let draft else { return }
+        // Blur / pixelate bake into the bitmap so undo cannot reveal censored pixels.
+        if draft.tool == .blur || draft.tool == .pixelate {
+            if draft.rect.width > 4, draft.rect.height > 4 {
+                bakeCensorEffect(draft)
+            }
+            self.draft = nil
+            return
+        }
         pushUndo()
         annotations.append(draft)
         self.draft = nil
+    }
+
+    /// Permanently composites blur/pixelate into `image` (not undoable).
+    private func bakeCensorEffect(_ annotation: Annotation) {
+        guard let effect = processedRegionImage(tool: annotation.tool, canvasRect: annotation.rect),
+              let base = image.cgImage
+        else { return }
+
+        let width = base.width
+        let height = base.height
+        guard let ctx = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: base.colorSpace ?? CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+
+        ctx.draw(base, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        let sx = CGFloat(width) / max(canvasSize.width, 1)
+        let sy = CGFloat(height) / max(canvasSize.height, 1)
+        var pixelRect = CGRect(
+            x: annotation.rect.minX * sx,
+            y: annotation.rect.minY * sy,
+            width: annotation.rect.width * sx,
+            height: annotation.rect.height * sy
+        ).integral
+        pixelRect = pixelRect.intersection(CGRect(x: 0, y: 0, width: width, height: height))
+        guard pixelRect.width > 1, pixelRect.height > 1 else { return }
+
+        // CGImage crop is top-left; CGContext draw is bottom-left.
+        let drawRect = CGRect(
+            x: pixelRect.minX,
+            y: CGFloat(height) - pixelRect.maxY,
+            width: pixelRect.width,
+            height: pixelRect.height
+        )
+        ctx.interpolationQuality = annotation.tool == .pixelate ? .none : .high
+        ctx.draw(effect, in: drawRect)
+
+        guard let composed = ctx.makeImage() else { return }
+        image = NSImage(cgImage: composed, size: image.size)
+        // Drop any leftover effect annotations; pixels are already baked.
+        annotations.removeAll { $0.tool == .blur || $0.tool == .pixelate }
+        // Invalidate undo that could restore a pre-censor annotation overlay on old pixels.
+        // Keep undo for vector shapes only if they don't depend on uncensored pixels underneath —
+        // safest: clear undo/redo after a permanent censor.
+        undoStack.removeAll()
+        redoStack.removeAll()
     }
 
     func renderedImage() -> NSImage {
@@ -398,7 +458,8 @@ final class AnnotationViewModel: ObservableObject {
         isOCRLoading = true
         defer { isOCRLoading = false }
         do {
-            ocrText = try await OCRService.shared.extractText(from: renderedImage())
+            let text = try await OCRService.shared.extractText(from: renderedImage())
+            ocrText = text.trimmingCharacters(in: .whitespacesAndNewlines)
             showOCRPanel = true
         } catch {
             ocrText = error.localizedDescription
