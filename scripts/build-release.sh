@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build PrismCapture.app (Release) and zip it for GitHub Releases.
-# Re-signs with Apple Development when available so TCC (Screen Recording) survives updates.
+# Signs with a Team-ID designated requirement so Screen Recording TCC survives updates.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,6 +12,8 @@ VERSION="${1:-1.0.0}"
 OUT_DIR="${ROOT}/dist"
 ARCHIVE_PATH="${OUT_DIR}/PrismCapture.xcarchive"
 APP_NAME="PrismCapture"
+BUNDLE_ID="com.prismcapture.app"
+TEAM_ID="AWYV6ST973"
 ZIP_NAME="${APP_NAME}-${VERSION}-macos.zip"
 LOG_FILE="${OUT_DIR}/xcodebuild.log"
 
@@ -31,7 +33,6 @@ rm -rf "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
 echo "→ Building Release…"
-# Archive unsigned/ad-hoc first (Xcode archive + Apple Development cert pairing is flaky for macOS).
 set +e
 xcodebuild \
   -project PrismCapture.xcodeproj \
@@ -66,16 +67,29 @@ if [[ -z "${APP_SRC}" || ! -d "${APP_SRC}" ]]; then
 fi
 
 cp -R "${APP_SRC}" "${OUT_DIR}/${APP_NAME}.app"
+APP_OUT="${OUT_DIR}/${APP_NAME}.app"
+
+# Team-ID based designated requirement — survives rebuilds better than the default
+# Apple Development CN pin, so TCC Screen Recording can stick across updates.
+REQ="designated => identifier \"${BUNDLE_ID}\" and anchor apple generic and certificate leaf[subject.OU] = \"${TEAM_ID}\""
 
 if [[ -n "${SIGN_IDENTITY}" ]]; then
   echo "→ Signing with: ${SIGN_IDENTITY}"
-  codesign --force --deep --options runtime --sign "${SIGN_IDENTITY}" "${OUT_DIR}/${APP_NAME}.app"
+  echo "→ Requirement: Team ${TEAM_ID}"
+  codesign --force --deep --options runtime \
+    --sign "${SIGN_IDENTITY}" \
+    --identifier "${BUNDLE_ID}" \
+    -r="${REQ}" \
+    "${APP_OUT}"
 else
-  echo "→ No Development / Developer ID cert — leaving ad-hoc (TCC may reset on updates)"
-  codesign --force --deep --sign - "${OUT_DIR}/${APP_NAME}.app" 2>/dev/null || true
+  echo "→ No Development / Developer ID cert — ad-hoc (TCC will reset on each update)" >&2
+  codesign --force --deep --sign - "${APP_OUT}" 2>/dev/null || true
 fi
 
-codesign -dv --verbose=2 "${OUT_DIR}/${APP_NAME}.app" 2>&1 | grep -E '^(Authority|TeamIdentifier|Signature|Identifier)=' || true
+echo "→ Signature:"
+codesign -dv --verbose=2 "${APP_OUT}" 2>&1 | grep -E '^(Authority|TeamIdentifier|Signature|Identifier)=' || true
+codesign -d -r- "${APP_OUT}" 2>&1 | tail -3
+codesign --verify --deep --strict "${APP_OUT}"
 
 cd "${OUT_DIR}"
 ditto -c -k --sequesterRsrc --keepParent "${APP_NAME}.app" "${ZIP_NAME}"

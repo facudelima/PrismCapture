@@ -173,13 +173,22 @@ final class UpdateService: ObservableObject {
         #!/bin/bash
         set -e
         sleep 1
-        # Clear quarantine only — do NOT re-sign (would break TCC / Screen Recording).
-        /usr/bin/xattr -dr com.apple.quarantine "\(appURL.path)" 2>/dev/null || true
-        /usr/bin/xattr -cr "\(appURL.path)" 2>/dev/null || true
-        /bin/rm -rf "\(target.path)"
-        /bin/cp -R "\(appURL.path)" "\(target.path)"
-        /usr/bin/xattr -dr com.apple.quarantine "\(target.path)" 2>/dev/null || true
-        /usr/bin/open "\(target.path)"
+        SRC="\(appURL.path)"
+        DST="\(target.path)"
+
+        # Only strip download quarantine — never xattr -cr (can confuse TCC).
+        /usr/bin/xattr -dr com.apple.quarantine "$SRC" 2>/dev/null || true
+
+        # Replace in place with ditto (do NOT rm -rf the .app first — that drops TCC grants).
+        if [[ -d "$DST" ]]; then
+          /usr/bin/ditto "$SRC" "$DST"
+        else
+          /usr/bin/ditto "$SRC" "$DST"
+        fi
+
+        /usr/bin/xattr -dr com.apple.quarantine "$DST" 2>/dev/null || true
+        /usr/bin/codesign --verify --deep --strict "$DST" >/dev/null 2>&1 || true
+        /usr/bin/open "$DST"
         /bin/rm -rf "\(extractDir.path)" "\(zipURL.path)"
         """
         let scriptURL = fm.temporaryDirectory.appendingPathComponent("prism-update-\(UUID().uuidString).sh")

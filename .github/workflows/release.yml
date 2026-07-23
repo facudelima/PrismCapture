@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version label (e.g. 1.1.1)"
+        description: "Version label (e.g. 1.3.3)"
         required: true
-        default: "1.1.1"
+        default: "1.3.3"
 
 permissions:
   contents: write
@@ -37,21 +37,14 @@ jobs:
           path: dist/PrismCapture-*-macos.zip
           if-no-files-found: error
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
-          name: PrismCapture ${{ github.event.inputs.version || github.ref_name }}
-          draft: false
-          files: dist/PrismCapture-*-macos.zip
-          fail_on_unmatched_files: true
-          body: |
-            ## Descargar PrismCapture
-            1. Bajá el `.zip` de abajo
-            2. Descomprimí → `PrismCapture.app`
-            3. Mové a **Aplicaciones**
-            4. Primera vez: clic derecho → **Abrir**
-
-            Requiere macOS 14+ y permiso de Grabación de pantalla.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Do NOT publish from CI: runners have no Apple Development cert, so the zip
+      # would be ad-hoc and overwrite a locally signed release (breaks TCC).
+      # Publish signed zips from the maintainer machine with:
+      #   ./scripts/build-release.sh X.Y.Z && gh release upload ...
+      - name: Skip unsigned GitHub Release publish
+        run: |
+          echo "CI artifact uploaded. Publish the signed zip from a Mac with the Development certificate."
+          codesign -dv --verbose=2 dist/PrismCapture.app 2>&1 | grep -E 'Signature|TeamIdentifier|Authority' || true
+          if codesign -dv dist/PrismCapture.app 2>&1 | grep -q 'Signature=adhoc'; then
+            echo "Ad-hoc build — not attaching to the GitHub Release."
+          fi

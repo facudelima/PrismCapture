@@ -25,29 +25,31 @@ final class PermissionService {
         }
     }
 
-    /// Ensures permission is available. Triggers the system prompt when needed.
-    /// Returns true if capture should proceed.
+    /// Ensures permission is available. Avoids re-prompting when TCC already granted
+    /// (common right after an in-app update while ScreenCaptureKit is still settling).
     func ensureScreenRecordingPermission() async -> Bool {
         if await canCaptureScreens() {
             return true
         }
 
-        // Triggers TCC prompt (or no-ops if already decided).
-        // Return value is unreliable after the user already toggled Settings —
-        // especially with Debug builds from Xcode — so we always re-probe SCK.
-        _ = CGRequestScreenCaptureAccess()
-
-        if await canCaptureScreens() {
-            return true
+        // Already allowed in System Settings — wait instead of calling
+        // CGRequestScreenCaptureAccess() again (that feels like “asking again”).
+        if CGPreflightScreenCaptureAccess() {
+            for _ in 0..<12 {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                if await canCaptureScreens() {
+                    return true
+                }
+            }
+            return await canCaptureScreens()
         }
 
-        // TCC can take a beat to settle after the user clicks Allow.
-        for _ in 0..<6 {
+        // First-time (or previously denied): show the system prompt once.
+        _ = CGRequestScreenCaptureAccess()
+
+        for _ in 0..<8 {
             try? await Task.sleep(nanoseconds: 250_000_000)
             if await canCaptureScreens() {
-                return true
-            }
-            if CGPreflightScreenCaptureAccess(), await canCaptureScreens() {
                 return true
             }
         }
