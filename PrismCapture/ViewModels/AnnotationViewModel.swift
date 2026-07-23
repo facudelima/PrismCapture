@@ -19,7 +19,6 @@ final class AnnotationViewModel: ObservableObject {
     @Published var remoteURL: URL?
     @Published var deleteHash: String?
     @Published var isUploading = false
-    @Published var cropRect: CGRect?
     @Published var editingTextID: UUID?
     @Published var editingTextDraft: String = ""
     /// Prevents the global Enter-to-copy shortcut from firing right after committing text.
@@ -48,7 +47,6 @@ final class AnnotationViewModel: ObservableObject {
         image = newImage
         // Pixel-baked effects no longer match the new pixels.
         annotations.removeAll { $0.tool == .blur || $0.tool == .pixelate }
-        cropRect = nil
         draft = nil
     }
 
@@ -228,8 +226,6 @@ final class AnnotationViewModel: ObservableObject {
             pushUndo()
             annotations.append(Annotation(tool: .marker, color: strokeColor, points: [point], markerNumber: nextMarkerNumber))
             nextMarkerNumber += 1
-        case .crop:
-            cropRect = CGRect(origin: point, size: .zero)
         default:
             draft = Annotation(
                 tool: selectedTool,
@@ -242,16 +238,6 @@ final class AnnotationViewModel: ObservableObject {
     }
 
     func continueStroke(to point: CGPoint) {
-        if selectedTool == .crop, let origin = cropRect?.origin {
-            cropRect = CGRect(
-                x: min(origin.x, point.x),
-                y: min(origin.y, point.y),
-                width: abs(point.x - origin.x),
-                height: abs(point.y - origin.y)
-            )
-            return
-        }
-
         guard var draft else { return }
         switch selectedTool {
         case .pencil, .highlighter:
@@ -270,31 +256,10 @@ final class AnnotationViewModel: ObservableObject {
     }
 
     func endStroke() {
-        if selectedTool == .crop {
-            applyCrop()
-            return
-        }
         guard let draft else { return }
         pushUndo()
         annotations.append(draft)
         self.draft = nil
-    }
-
-    func applyCrop() {
-        guard let cropRect, cropRect.width > 8, cropRect.height > 8 else {
-            self.cropRect = nil
-            return
-        }
-        let imageRect = scaleRectToImage(cropRect)
-        guard let cropped = image.cropped(to: imageRect) else {
-            self.cropRect = nil
-            return
-        }
-        pushUndo()
-        image = cropped
-        canvasSize = cropRect.size
-        annotations.removeAll()
-        self.cropRect = nil
     }
 
     func renderedImage() -> NSImage {
@@ -384,7 +349,7 @@ final class AnnotationViewModel: ObservableObject {
                 .font: NSFont.systemFont(ofSize: 28)
             ]
             (annotation.emoji as NSString).draw(at: point, withAttributes: attrs)
-        case .select, .crop:
+        case .select:
             break
         }
     }

@@ -259,9 +259,6 @@ struct AnnotationDrawingView: View {
             if let draft = viewModel.draft {
                 draw(draft, in: &context, isDraft: true)
             }
-            if let crop = viewModel.cropRect {
-                context.stroke(Path(roundedRect: crop, cornerRadius: 2), with: .color(.white), lineWidth: 1.5)
-            }
         }
     }
 
@@ -333,7 +330,7 @@ struct AnnotationDrawingView: View {
             if let p = annotation.points.first {
                 context.draw(Text(annotation.emoji).font(.system(size: 28)), at: p, anchor: .topLeading)
             }
-        case .select, .crop:
+        case .select:
             break
         }
     }

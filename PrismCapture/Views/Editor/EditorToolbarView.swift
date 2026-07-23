@@ -8,7 +8,7 @@ struct EditorToolbarView: View {
 
     private let tools: [EditorTool] = [
         .rectangle, .circle, .arrow, .line, .pencil, .highlighter,
-        .blur, .pixelate, .text, .marker, .crop
+        .blur, .pixelate, .text, .marker
     ]
 
     var body: some View {

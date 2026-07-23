@@ -14,7 +14,6 @@ enum EditorTool: String, CaseIterable, Identifiable {
     case text
     case marker
     case emoji
-    case crop
 
     var id: String { rawValue }
 
@@ -32,7 +31,6 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .text: return "Texto"
         case .marker: return "Marcador"
         case .emoji: return "Emoji"
-        case .crop: return "Recortar"
         }
     }
 
@@ -50,13 +48,12 @@ enum EditorTool: String, CaseIterable, Identifiable {
         case .text: return "textformat"
         case .marker: return "1.circle"
         case .emoji: return "face.smiling"
-        case .crop: return "crop"
         }
     }
 
     var isDrawable: Bool {
         switch self {
-        case .select, .crop, .text, .emoji:
+        case .select, .text, .emoji:
             return false
         default:
             return true

@@ -26,13 +26,6 @@ struct AnnotationCanvasView: View {
                             if let draft = viewModel.draft {
                                 draw(draft, in: &context)
                             }
-                            if let crop = viewModel.cropRect {
-                                context.stroke(
-                                    Path(roundedRect: crop, cornerRadius: 2),
-                                    with: .color(.white),
-                                    lineWidth: 1.5
-                                )
-                            }
                         }
                         .gesture(drawGesture(in: fitted))
                     }
@@ -62,7 +55,7 @@ struct AnnotationCanvasView: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 let point = map(value.location, in: fitted)
-                if viewModel.draft == nil && viewModel.cropRect == nil
+                if viewModel.draft == nil
                     && ![.text, .emoji, .marker].contains(viewModel.selectedTool) {
                     viewModel.beginStroke(at: point)
                 } else if [.text, .emoji, .marker].contains(viewModel.selectedTool) {
@@ -136,7 +129,7 @@ struct AnnotationCanvasView: View {
             if let p = annotation.points.first {
                 context.draw(Text(annotation.emoji).font(.system(size: 28)), at: p, anchor: .topLeading)
             }
-        case .select, .crop:
+        case .select:
             break
         }
     }

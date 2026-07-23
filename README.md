@@ -57,7 +57,7 @@ La app vive en la barra de menú (`LSUIElement`).
 | ⌘S | Guardar |
 | Esc | Cancelar / cerrar |
 
-Tras capturar aparece un editor flotante con herramientas de anotación (rectángulo, círculo, flecha, lápiz, resaltador, blur, pixelate, texto, marcadores, emoji, crop), undo/redo, OCR y subida. La herramienta **Mover** re-captura la zona (estilo Lightshot).
+Tras capturar aparece un editor flotante con herramientas de anotación (rectángulo, círculo, flecha, lápiz, resaltador, blur, pixelate, texto, marcadores, emoji), undo/redo, OCR y subida. La herramienta **Mover** re-captura la zona (estilo Lightshot).
 
 ## Arquitectura
 
