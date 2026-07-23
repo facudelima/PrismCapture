@@ -239,11 +239,11 @@ final class UpdateService: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .network: return "Sin conexión con el servidor de actualizaciones."
-            case .http(let code): return "No se pudo consultar actualizaciones (\(code))."
-            case .downloadFailed: return "Falló la descarga."
-            case .unzipFailed: return "No se pudo descomprimir la actualización."
-            case .appMissingInZip: return "El paquete de actualización está incompleto."
+            case .network: return L10n.string("Could not reach the update server.")
+            case .http(let code): return L10n.format("Could not check for updates (%lld).", code)
+            case .downloadFailed: return L10n.string("Download failed.")
+            case .unzipFailed: return L10n.string("Could not unpack the update.")
+            case .appMissingInZip: return L10n.string("The update package is incomplete.")
             }
         }
     }

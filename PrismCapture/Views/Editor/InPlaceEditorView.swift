@@ -168,7 +168,7 @@ struct InPlaceEditorView: View {
     private func copyAndClose() {
         ClipboardService.shared.copyImage(annotationVM.renderedImage())
         if settings.showToastOnCopy {
-            captureVM.showToast("Copiado al portapapeles")
+            captureVM.showToast(L10n.string("Copied to clipboard"))
         }
         OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
     }
@@ -199,7 +199,7 @@ struct InPlaceEditorView: View {
             if settings.clipboardBehavior == .copyOnSave {
                 ClipboardService.shared.copyImage(annotationVM.renderedImage())
             }
-            captureVM.showToast("Guardado")
+            captureVM.showToast(L10n.string("Saved"))
         }
     }
 }

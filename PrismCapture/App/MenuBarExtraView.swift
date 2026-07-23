@@ -50,7 +50,7 @@ struct MenuBarExtraView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("PrismCapture")
                     .font(.system(size: 15, weight: .semibold))
-                Text(permissionOK ? "Listo para capturar" : "Sin permiso de pantalla")
+                Text(permissionOK ? L10n.string("Ready to capture") : L10n.string("Screen permission missing"))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(permissionOK ? Color.secondary : Color.orange)
             }
@@ -69,10 +69,10 @@ struct MenuBarExtraView: View {
 
     private var captureSection: some View {
         VStack(spacing: 4) {
-            menuRow("Área", shortcut: settings.hotkeyArea.displayString, icon: "rectangle.dashed") {
+            menuRow(L10n.string("Area"), shortcut: settings.hotkeyArea.displayString, icon: "rectangle.dashed") {
                 appState.captureArea()
             }
-            menuRow("Pantalla completa", shortcut: settings.hotkeyFullscreen.displayString, icon: "rectangle.on.rectangle") {
+            menuRow(L10n.string("Full Screen"), shortcut: settings.hotkeyFullscreen.displayString, icon: "rectangle.on.rectangle") {
                 appState.captureFullscreen()
             }
         }
@@ -88,13 +88,13 @@ struct MenuBarExtraView: View {
 
             switch updates.status {
             case .available(let latest, _):
-                menuRow("Actualizar a v\(latest)", shortcut: nil, icon: "arrow.down.app.fill") {
+                menuRow(L10n.format("Update to v%@", latest), shortcut: nil, icon: "arrow.down.app.fill") {
                     Task { await updates.installAvailableUpdate() }
                 }
             case .downloading, .installing, .checking:
                 EmptyView()
             default:
-                menuRow("Buscar actualizaciones", shortcut: nil, icon: "arrow.triangle.2.circlepath") {
+                menuRow(L10n.string("Check for Updates"), shortcut: nil, icon: "arrow.triangle.2.circlepath") {
                     Task { await updates.checkForUpdates(silent: false) }
                 }
             }
@@ -104,17 +104,17 @@ struct MenuBarExtraView: View {
     private var statusLine: String {
         switch updates.status {
         case .idle:
-            return "Versión \(updates.currentVersion)"
+            return L10n.format("Version %@", updates.currentVersion)
         case .checking:
-            return "Buscando actualizaciones…"
+            return L10n.string("Checking for updates…")
         case .upToDate:
-            return "Estás al día"
+            return L10n.string("You're up to date")
         case .available(_, _):
-            return "Nueva versión disponible"
+            return L10n.string("Update available")
         case .downloading(let p):
-            return "Descargando… \(Int(p * 100))%"
+            return L10n.format("Downloading… %lld%%", Int(p * 100))
         case .installing:
-            return "Instalando y reiniciando…"
+            return L10n.string("Installing and relaunching…")
         case .error(let message):
             return message
         }
@@ -129,9 +129,10 @@ struct MenuBarExtraView: View {
     }
 
     private var footer: some View {
-        VStack(spacing: 4) {
+        let settingsTitle = L10n.string("Settings…")
+        return VStack(spacing: 4) {
             if !permissionOK {
-                menuRow("Abrir permisos…", shortcut: nil, icon: "hand.raised") {
+                menuRow(L10n.string("Open Permissions…"), shortcut: nil, icon: "hand.raised") {
                     PermissionService.shared.openScreenRecordingSettings()
                 }
             }
@@ -141,7 +142,7 @@ struct MenuBarExtraView: View {
                     Image(systemName: "gearshape")
                         .font(.system(size: 13, weight: .medium))
                         .frame(width: 18)
-                    Text("Ajustes…")
+                    Text(settingsTitle)
                         .font(.system(size: 13, weight: .medium))
                     Spacer()
                     Text("⌘,")
@@ -152,21 +153,21 @@ struct MenuBarExtraView: View {
                 .padding(.vertical, 8)
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(.white.opacity(hoveredAction == "Ajustes…" ? 0.14 : 0))
+                        .fill(.white.opacity(hoveredAction == settingsTitle ? 0.14 : 0))
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .onHover { hovering in
                 withAnimation(.prismSnappy) {
-                    hoveredAction = hovering ? "Ajustes…" : nil
+                    hoveredAction = hovering ? settingsTitle : nil
                 }
             }
             .simultaneousGesture(TapGesture().onEnded {
                 appState.prepareSettingsPresentation()
             })
 
-            menuRow("Salir", shortcut: "⌘Q", icon: "power") {
+            menuRow(L10n.string("Quit"), shortcut: "⌘Q", icon: "power") {
                 NSApp.terminate(nil)
             }
         }

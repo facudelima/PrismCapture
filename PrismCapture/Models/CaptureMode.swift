@@ -9,9 +9,9 @@ enum CaptureMode: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .area: return "Área"
-        case .fullscreen: return "Pantalla completa"
-        case .delayed: return "Con retardo"
+        case .area: return L10n.string("Area")
+        case .fullscreen: return L10n.string("Full Screen")
+        case .delayed: return L10n.string("Delayed")
         }
     }
 
@@ -34,7 +34,7 @@ enum CaptureDelay: Int, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .none: return "Sin retardo"
+        case .none: return L10n.string("No delay")
         case .three: return "3 s"
         case .five: return "5 s"
         case .ten: return "10 s"

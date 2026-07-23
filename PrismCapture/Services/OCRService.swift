@@ -24,7 +24,12 @@ final class OCRService {
             }
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
-            request.recognitionLanguages = ["es-ES", "en-US"]
+            // Prefer the system language(s), then fall back to Spanish/English.
+            var languages = Locale.preferredLanguages
+            for fallback in ["es-ES", "en-US"] where !languages.contains(where: { $0.hasPrefix(String(fallback.prefix(2))) }) {
+                languages.append(fallback)
+            }
+            request.recognitionLanguages = Array(languages.prefix(5))
 
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             do {
@@ -52,6 +57,6 @@ enum OCRError: LocalizedError {
     case invalidImage
 
     var errorDescription: String? {
-        "Imagen no válida para OCR."
+        L10n.string("Invalid image for OCR.")
     }
 }

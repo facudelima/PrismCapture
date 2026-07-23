@@ -19,18 +19,18 @@ enum EditorTool: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .select: return "Mover"
-        case .rectangle: return "Rectángulo"
-        case .circle: return "Círculo"
-        case .arrow: return "Flecha"
-        case .line: return "Línea"
-        case .pencil: return "Lápiz"
-        case .highlighter: return "Resaltador"
-        case .blur: return "Desenfocar (no se puede deshacer)"
-        case .pixelate: return "Pixelar / censurar (no se puede deshacer)"
-        case .text: return "Texto"
-        case .marker: return "Marcador"
-        case .emoji: return "Emoji"
+        case .select: return L10n.string("Move")
+        case .rectangle: return L10n.string("Rectangle")
+        case .circle: return L10n.string("Circle")
+        case .arrow: return L10n.string("Arrow")
+        case .line: return L10n.string("Line")
+        case .pencil: return L10n.string("Pencil")
+        case .highlighter: return L10n.string("Highlighter")
+        case .blur: return L10n.string("Blur (cannot be undone)")
+        case .pixelate: return L10n.string("Pixelate / censor (cannot be undone)")
+        case .text: return L10n.string("Text")
+        case .marker: return L10n.string("Marker")
+        case .emoji: return L10n.string("Emoji")
         }
     }
 

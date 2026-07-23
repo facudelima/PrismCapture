@@ -75,7 +75,7 @@ struct EditorWindowView: View {
             if settings.clipboardBehavior == .copyOnSave {
                 ClipboardService.shared.copyImage(annotationVM.renderedImage())
             }
-            captureVM.showToast("Guardado")
+            captureVM.showToast(L10n.string("Saved"))
             prepareDragItem(url: url)
         }
     }

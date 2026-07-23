@@ -20,30 +20,30 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                settingsCard(title: "General") {
-                    toggleRow("Abrir al iniciar sesión", isOn: Binding(
+                settingsCard(title: L10n.string("General")) {
+                    toggleRow(L10n.string("Open at Login"), isOn: Binding(
                         get: { settings.launchAtLogin },
                         set: { viewModel.setLaunchAtLogin($0) }
                     ))
                     divider
-                    toggleRow("Mostrar aviso al copiar", isOn: $settings.showToastOnCopy)
-                    Text("Esc cancela · Copiar / ⌘C guarda en el portapapeles.")
+                    toggleRow(L10n.string("Show toast when copying"), isOn: $settings.showToastOnCopy)
+                    Text(L10n.string("Esc cancels · Copy / ⌘C saves to the clipboard."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
 
-                settingsCard(title: "Archivos") {
-                    toggleRow("Guardar automáticamente al capturar", isOn: $settings.autoSave)
+                settingsCard(title: L10n.string("Files")) {
+                    toggleRow(L10n.string("Auto-save on capture"), isOn: $settings.autoSave)
                     divider
-                    toggleRow("Copiar también al guardar", isOn: Binding(
+                    toggleRow(L10n.string("Also copy when saving"), isOn: Binding(
                         get: { settings.clipboardBehavior == .copyOnSave },
                         set: { settings.clipboardBehavior = $0 ? .copyOnSave : .never }
                     ))
                     divider
                     HStack(alignment: .top, spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Carpeta de guardado")
+                            Text(L10n.string("Save folder"))
                                 .font(.system(size: 13, weight: .medium))
                             Text(settings.defaultSaveFolder.isEmpty
                                  ? settings.resolvedSaveFolder.path
@@ -54,14 +54,14 @@ struct SettingsView: View {
                                 .truncationMode(.middle)
                         }
                         Spacer(minLength: 8)
-                        Button("Elegir…") { viewModel.chooseSaveFolder() }
+                        Button(L10n.string("Choose…")) { viewModel.chooseSaveFolder() }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }
                 }
 
-                settingsCard(title: "Apariencia") {
-                    Picker("Tema", selection: Binding(
+                settingsCard(title: L10n.string("Appearance")) {
+                    Picker(L10n.string("Theme"), selection: Binding(
                         get: { settings.theme },
                         set: { newValue in
                             Task { @MainActor in
@@ -76,18 +76,25 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+
+                    Text(L10n.string("Language follows your Mac’s System Settings."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                 }
 
-                settingsCard(title: "Permisos y atajos") {
+                settingsCard(title: L10n.string("Permissions & Shortcuts")) {
                     HStack {
                         Label(
-                            permissionOK ? "Permiso de pantalla concedido" : "Falta permiso de pantalla",
+                            permissionOK
+                                ? L10n.string("Screen permission granted")
+                                : L10n.string("Screen permission required"),
                             systemImage: permissionOK ? "checkmark.shield.fill" : "exclamationmark.shield.fill"
                         )
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(permissionOK ? Color.secondary : Color.orange)
                         Spacer()
-                        Button("Sistema…") {
+                        Button(L10n.string("System…")) {
                             PermissionService.shared.openScreenRecordingSettings()
                         }
                         .buttonStyle(.bordered)
@@ -97,7 +104,7 @@ struct SettingsView: View {
                     divider
 
                     ShortcutRecorderButton(
-                        title: "Capturar área",
+                        title: L10n.string("Capture Area"),
                         binding: Binding(
                             get: { settings.hotkeyArea },
                             set: { settings.hotkeyArea = $0 }
@@ -105,7 +112,7 @@ struct SettingsView: View {
                         isConflict: settings.hotkeyArea == settings.hotkeyFullscreen
                     )
                     ShortcutRecorderButton(
-                        title: "Pantalla completa",
+                        title: L10n.string("Full Screen"),
                         binding: Binding(
                             get: { settings.hotkeyFullscreen },
                             set: { settings.hotkeyFullscreen = $0 }
@@ -113,28 +120,28 @@ struct SettingsView: View {
                         isConflict: settings.hotkeyFullscreen == settings.hotkeyArea
                     )
 
-                    labeledShortcut("Copiar y cerrar", "⌘C")
-                    labeledShortcut("Guardar", "⌘S")
-                    labeledShortcut("Cancelar", "Esc")
+                    labeledShortcut(L10n.string("Copy & Close"), "⌘C")
+                    labeledShortcut(L10n.string("Save"), "⌘S")
+                    labeledShortcut(L10n.string("Cancel"), "Esc")
 
                     divider
 
-                    Button("Restablecer atajos de captura") {
+                    Button(L10n.string("Reset capture shortcuts")) {
                         settings.resetHotkeys()
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                     .font(.system(size: 12, weight: .medium))
 
-                    Text("Clic en un atajo y presioná la nueva combinación. Esc cancela la grabación.")
+                    Text(L10n.string("Click a shortcut and press the new combination. Esc cancels recording."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
                 }
 
-                settingsCard(title: "Acerca de") {
+                settingsCard(title: L10n.string("About")) {
                     HStack {
-                        Text("Versión")
+                        Text(L10n.string("Version"))
                             .font(.system(size: 13, weight: .medium))
                         Spacer()
                         Text("v\(appVersion) (\(appBuild))")
@@ -148,13 +155,13 @@ struct SettingsView: View {
 
                     HStack(spacing: 8) {
                         if case .available(let latest, _) = updates.status {
-                            Button("Actualizar a v\(latest)") {
+                            Button(L10n.format("Update to v%@", latest)) {
                                 Task { await updates.installAvailableUpdate() }
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
                         } else {
-                            Button("Buscar actualizaciones") {
+                            Button(L10n.string("Check for Updates")) {
                                 Task { await updates.checkForUpdates(silent: false) }
                             }
                             .buttonStyle(.bordered)
@@ -194,12 +201,12 @@ struct SettingsView: View {
 
     private var aboutStatusText: String {
         switch updates.status {
-        case .idle: return "Podés buscar si hay una versión nueva."
-        case .checking: return "Buscando…"
-        case .upToDate: return "Estás al día."
-        case .available(let latest, _): return "Hay una versión nueva: v\(latest)."
-        case .downloading(let p): return "Descargando… \(Int(p * 100))%"
-        case .installing: return "Instalando y reiniciando…"
+        case .idle: return L10n.string("You can check for a new version.")
+        case .checking: return L10n.string("Checking…")
+        case .upToDate: return L10n.string("Up to date.")
+        case .available(let latest, _): return L10n.format("A new version is available: v%@.", latest)
+        case .downloading(let p): return L10n.format("Downloading… %lld%%", Int(p * 100))
+        case .installing: return L10n.string("Installing and relaunching…")
         case .error(let message): return message
         }
     }

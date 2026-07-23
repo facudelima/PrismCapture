@@ -38,7 +38,7 @@ final class CaptureViewModel: ObservableObject {
             let allowed = await PermissionService.shared.ensureScreenRecordingPermission()
             guard allowed else {
                 PermissionService.shared.openScreenRecordingSettings()
-                showToast("Falta permiso de pantalla — revisá Ajustes y reiniciá la app")
+                showToast(L10n.string("Screen permission missing — check Settings and relaunch the app"))
                 return
             }
             beginCaptureFlow(mode: mode, delay: delay)

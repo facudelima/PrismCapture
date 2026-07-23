@@ -34,7 +34,7 @@ struct EditorToolbarView: View {
                 ForEach(StrokeWidth.allCases) { width in
                     GlassIconButton(
                         systemName: "circle.fill",
-                        help: "Grosor \(Int(width.rawValue))",
+                        help: L10n.format("Stroke width %lld", Int(width.rawValue)),
                         isSelected: viewModel.strokeWidth == width
                     ) {
                         viewModel.strokeWidth = width
@@ -45,10 +45,10 @@ struct EditorToolbarView: View {
                 toolbarDivider
             }
 
-            GlassIconButton(systemName: "arrow.uturn.backward", help: "Deshacer", isDisabled: !viewModel.canUndo) {
+            GlassIconButton(systemName: "arrow.uturn.backward", help: L10n.string("Undo"), isDisabled: !viewModel.canUndo) {
                 viewModel.undo()
             }
-            GlassIconButton(systemName: "arrow.uturn.forward", help: "Rehacer", isDisabled: !viewModel.canRedo) {
+            GlassIconButton(systemName: "arrow.uturn.forward", help: L10n.string("Redo"), isDisabled: !viewModel.canRedo) {
                 viewModel.redo()
             }
 
@@ -56,20 +56,20 @@ struct EditorToolbarView: View {
 
             GlassIconButton(
                 systemName: viewModel.isOCRLoading ? "ellipsis" : "text.viewfinder",
-                help: "Detectar texto",
+                help: L10n.string("Detect Text"),
                 isDisabled: viewModel.isOCRLoading
             ) {
                 Task { await viewModel.runOCR() }
             }
 
-            GlassIconButton(systemName: "doc.on.doc", help: "Copiar (⌘C)") {
+            GlassIconButton(systemName: "doc.on.doc", help: L10n.string("Copy (⌘C)")) {
                 ClipboardService.shared.copyImage(viewModel.renderedImage())
                 if settings.showToastOnCopy {
-                    captureVM.showToast("Copiado al portapapeles")
+                    captureVM.showToast(L10n.string("Copied to clipboard"))
                 }
                 OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
             }
-            GlassIconButton(systemName: "square.and.arrow.down", help: "Guardar (⌘S)") {
+            GlassIconButton(systemName: "square.and.arrow.down", help: L10n.string("Save (⌘S)")) {
                 if let url = FileService.shared.savePanel(image: viewModel.renderedImage(), format: settings.imageFormat) {
                     HistoryViewModel.shared.add(
                         image: viewModel.renderedImage(),
@@ -80,28 +80,28 @@ struct EditorToolbarView: View {
                     if settings.clipboardBehavior == .copyOnSave {
                         ClipboardService.shared.copyImage(viewModel.renderedImage())
                     }
-                    captureVM.showToast("Guardado")
+                    captureVM.showToast(L10n.string("Saved"))
                 }
             }
 
             if !compact {
                 GlassIconButton(
                     systemName: viewModel.isUploading ? "arrow.triangle.2.circlepath" : "link",
-                    help: "Subir y copiar URL",
+                    help: L10n.string("Upload and copy URL"),
                     isDisabled: settings.uploadProvider == .none
                 ) {
                     Task {
                         await viewModel.upload()
                         if viewModel.remoteURL != nil {
-                            captureVM.showToast("URL copiada")
+                            captureVM.showToast(L10n.string("URL copied"))
                         } else {
-                            captureVM.showToast("Error al subir")
+                            captureVM.showToast(L10n.string("Upload failed"))
                         }
                     }
                 }
 
                 if viewModel.remoteURL != nil {
-                    GlassIconButton(systemName: "trash", help: "Eliminar remoto") {
+                    GlassIconButton(systemName: "trash", help: L10n.string("Delete remote")) {
                         Task { await viewModel.deleteRemote() }
                     }
                 }
@@ -109,7 +109,7 @@ struct EditorToolbarView: View {
 
             toolbarDivider
 
-            GlassIconButton(systemName: "xmark", help: "Cerrar (Esc)") {
+            GlassIconButton(systemName: "xmark", help: L10n.string("Close (Esc)")) {
                 OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
             }
         }

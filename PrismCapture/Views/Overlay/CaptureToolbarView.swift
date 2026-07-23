@@ -5,10 +5,10 @@ struct CaptureToolbarView: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            GlassIconButton(systemName: "checkmark", help: "Capturar (Enter)") {
+            GlassIconButton(systemName: "checkmark", help: L10n.string("Capture (Return)")) {
                 viewModel.confirmSelection()
             }
-            GlassIconButton(systemName: "xmark", help: "Cancelar (Esc)") {
+            GlassIconButton(systemName: "xmark", help: L10n.string("Cancel (Esc)")) {
                 viewModel.cancelSelection()
             }
 

@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "NSScreenCaptureUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PrismCapture needs Screen Recording permission to take screenshots."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PrismCapture necesita permiso de Grabación de pantalla para capturar capturas de pantalla."
+          }
+        }
+      }
+    }
+  }
+}

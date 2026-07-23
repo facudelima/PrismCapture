@@ -31,9 +31,9 @@ enum AppTheme: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .system: return "Auto"
-        case .light: return "Claro"
-        case .dark: return "Oscuro"
+        case .system: return L10n.string("Auto")
+        case .light: return L10n.string("Light")
+        case .dark: return L10n.string("Dark")
         }
     }
 
@@ -77,9 +77,9 @@ enum UploadProvider: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .none: return "Ninguno"
+        case .none: return L10n.string("None")
         case .imgur: return "Imgur"
-        case .custom: return "Personalizado"
+        case .custom: return L10n.string("Custom")
         }
     }
 }
@@ -92,8 +92,8 @@ enum ClipboardBehavior: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .never: return "Solo con Copiar / ⌘C"
-        case .copyOnSave: return "También al guardar"
+        case .never: return L10n.string("Only with Copy / ⌘C")
+        case .copyOnSave: return L10n.string("Also when saving")
         }
     }
 }

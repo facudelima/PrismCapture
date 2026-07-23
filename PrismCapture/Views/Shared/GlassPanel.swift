@@ -66,18 +66,18 @@ struct OCRResultPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Detectar texto", systemImage: "text.viewfinder")
+                Label(L10n.string("Detect Text"), systemImage: "text.viewfinder")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
-                GlassIconButton(systemName: "doc.on.doc", help: "Copiar texto") {
+                GlassIconButton(systemName: "doc.on.doc", help: L10n.string("Copy text")) {
                     ClipboardService.shared.copyText(text)
                 }
-                GlassIconButton(systemName: "xmark", help: "Cerrar") {
+                GlassIconButton(systemName: "xmark", help: L10n.string("Close")) {
                     isPresented = false
                 }
             }
 
-            TextField("Buscar en el texto…", text: $query)
+            TextField(L10n.string("Search in text…"), text: $query)
                 .textFieldStyle(.plain)
                 .padding(8)
                 .background {
@@ -99,7 +99,7 @@ struct OCRResultPanel: View {
     }
 
     private var highlightedText: AttributedString {
-        var attributed = AttributedString(text.isEmpty ? "Sin texto detectado." : text)
+        var attributed = AttributedString(text.isEmpty ? L10n.string("No text detected.") : text)
         guard !query.isEmpty else { return attributed }
         let ns = NSString(string: text)
         var searchRange = NSRange(location: 0, length: ns.length)

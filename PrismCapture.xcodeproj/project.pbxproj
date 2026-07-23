@@ -48,6 +48,9 @@
 		E9BF4136EBFB94025900361E /* OCRResultPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED25511E3655445AC9E02E2B /* OCRResultPanel.swift */; };
 		E6283309DC50C4B3DA561552 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3E2FC3066C9F43399E313B9 /* ToastView.swift */; };
 		EA0A0B9CD5C174309944314D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E2F527E2A80954852A61E02E /* Assets.xcassets */; };
+		E9F0A1B2C3D4E5F60718293C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E9F0A1B2C3D4E5F60718293D /* Localizable.xcstrings */; };
+		E9F0A1B2C3D4E5F60718293E /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E9F0A1B2C3D4E5F60718293F /* InfoPlist.xcstrings */; };
+		E9F0A1B2C3D4E5F607182940 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F0A1B2C3D4E5F607182941 /* L10n.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -93,6 +96,9 @@
 		ED25511E3655445AC9E02E2B /* OCRResultPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OCRResultPanel.swift; path = "Views/Shared/OCRResultPanel.swift"; sourceTree = "<group>"; };
 		E3E2FC3066C9F43399E313B9 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToastView.swift; path = "Views/Shared/ToastView.swift"; sourceTree = "<group>"; };
 		E2F527E2A80954852A61E02E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = "Resources/Assets.xcassets"; sourceTree = "<group>"; };
+		E9F0A1B2C3D4E5F60718293D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = "Resources/Localizable.xcstrings"; sourceTree = "<group>"; };
+		E9F0A1B2C3D4E5F60718293F /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = InfoPlist.xcstrings; path = "Resources/InfoPlist.xcstrings"; sourceTree = "<group>"; };
+		E9F0A1B2C3D4E5F607182941 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = L10n.swift; path = "Utilities/L10n.swift"; sourceTree = "<group>"; };
 		EBDB461084F664510AD9811F /* PrismCapture.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PrismCapture.entitlements; sourceTree = "<group>"; };
 		E85B33FC14511434F8E9B49F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -148,6 +154,7 @@
 				E0D08D8E2A25645CF82DFE0E /* AnimationPrism.swift */,
 				E1F7E0308F019477C88C3B8B /* CGImageExtensions.swift */,
 				E1436985D2A994C768F7BD5C /* NSImageExtensions.swift */,
+				E9F0A1B2C3D4E5F607182941 /* L10n.swift */,
 				E1AC35B36D66545AF954A912 /* AnnotationViewModel.swift */,
 				E0F09A265A69C4892B2D0DC3 /* CaptureViewModel.swift */,
 				EAAB9604F2A1A4FD1B3B25FF /* HistoryViewModel.swift */,
@@ -168,6 +175,8 @@
 				ED25511E3655445AC9E02E2B /* OCRResultPanel.swift */,
 				E3E2FC3066C9F43399E313B9 /* ToastView.swift */,
 				E2F527E2A80954852A61E02E /* Assets.xcassets */,
+				E9F0A1B2C3D4E5F60718293D /* Localizable.xcstrings */,
+				E9F0A1B2C3D4E5F60718293F /* InfoPlist.xcstrings */,
 				EBDB461084F664510AD9811F /* PrismCapture.entitlements */,
 				E85B33FC14511434F8E9B49F /* Info.plist */,
 			);
@@ -210,6 +219,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				es,
 				Base,
 			);
 			mainGroup = E1FF572F3A2BF46A8860E65E;
@@ -229,6 +239,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA0A0B9CD5C174309944314D /* Assets.xcassets in Resources */,
+				E9F0A1B2C3D4E5F60718293C /* Localizable.xcstrings in Resources */,
+				E9F0A1B2C3D4E5F60718293E /* InfoPlist.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +272,7 @@
 				E509B77D5C7044276BBC70FA /* AnimationPrism.swift in Sources */,
 				E373B67E69A5541E7B87F1CF /* CGImageExtensions.swift in Sources */,
 				E4BCE82ECB3CF4B979693444 /* NSImageExtensions.swift in Sources */,
+				E9F0A1B2C3D4E5F607182940 /* L10n.swift in Sources */,
 				EEA97799990B241718261F39 /* AnnotationViewModel.swift in Sources */,
 				EFCBFCF59A9BC49DCBFDC9DF /* CaptureViewModel.swift in Sources */,
 				E39ADD898B80C4DAA827E33B /* HistoryViewModel.swift in Sources */,
@@ -381,7 +394,7 @@
 				CODE_SIGN_ENTITLEMENTS = PrismCapture/PrismCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = AWYV6ST973;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -394,7 +407,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.prismcapture.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -410,7 +423,7 @@
 				CODE_SIGN_ENTITLEMENTS = PrismCapture/PrismCapture.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = AWYV6ST973;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -423,7 +436,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.prismcapture.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
