@@ -1,8 +1,6 @@
 # PrismCapture
 
-App nativa de capturas para macOS, inspirada en Lightshot / CleanShot X.
 
-**Sin IA** — captura, anotación, OCR, portapapeles, historial y compartir.
 
 ## Descargar la app
 
