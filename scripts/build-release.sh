@@ -32,7 +32,7 @@ fi
 rm -rf "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 
-echo "→ Building Release…"
+echo "Building Release..."
 set +e
 xcodebuild \
   -project PrismCapture.xcodeproj \
@@ -41,15 +41,15 @@ xcodebuild \
   -derivedDataPath "${OUT_DIR}/DerivedData" \
   -archivePath "${ARCHIVE_PATH}" \
   archive \
-  CODE_SIGN_IDENTITY="-" \
+  CODE_SIGN_IDENTITY=- \
   CODE_SIGNING_ALLOWED=YES \
   CODE_SIGNING_REQUIRED=NO \
   >"${LOG_FILE}" 2>&1
 BUILD_STATUS=$?
 set -e
 
-if [[ ${BUILD_STATUS} -ne 0 ]]; then
-  echo "xcodebuild falló (exit ${BUILD_STATUS}). Últimas líneas:" >&2
+if [[ "${BUILD_STATUS}" -ne 0 ]]; then
+  echo "xcodebuild failed (exit ${BUILD_STATUS}). Last lines:" >&2
   tail -n 80 "${LOG_FILE}" >&2
   exit "${BUILD_STATUS}"
 fi
@@ -62,31 +62,30 @@ else
 fi
 
 if [[ -z "${APP_SRC}" || ! -d "${APP_SRC}" ]]; then
-  echo "No se encontró ${APP_NAME}.app tras el build." >&2
+  echo "PrismCapture.app not found after build." >&2
   exit 1
 fi
 
 cp -R "${APP_SRC}" "${OUT_DIR}/${APP_NAME}.app"
 APP_OUT="${OUT_DIR}/${APP_NAME}.app"
 
-# Team-ID based designated requirement — survives rebuilds better than the default
-# Apple Development CN pin, so TCC Screen Recording can stick across updates.
-REQ="designated => identifier \"${BUNDLE_ID}\" and anchor apple generic and certificate leaf[subject.OU] = \"${TEAM_ID}\""
+# Team-ID designated requirement (not CN-pinned) so TCC can survive updates.
+REQ='designated => identifier "'"${BUNDLE_ID}"'" and anchor apple generic and certificate leaf[subject.OU] = "'"${TEAM_ID}"'"'
 
 if [[ -n "${SIGN_IDENTITY}" ]]; then
-  echo "→ Signing with: ${SIGN_IDENTITY}"
-  echo "→ Requirement: Team ${TEAM_ID}"
+  echo "Signing with: ${SIGN_IDENTITY}"
+  echo "Requirement: Team ${TEAM_ID}"
   codesign --force --deep --options runtime \
     --sign "${SIGN_IDENTITY}" \
     --identifier "${BUNDLE_ID}" \
     -r="${REQ}" \
     "${APP_OUT}"
 else
-  echo "→ No Development / Developer ID cert — ad-hoc (TCC will reset on each update)" >&2
+  echo "No Development / Developer ID cert — ad-hoc (TCC will reset on each update)" >&2
   codesign --force --deep --sign - "${APP_OUT}" 2>/dev/null || true
 fi
 
-echo "→ Signature:"
+echo "Signature:"
 codesign -dv --verbose=2 "${APP_OUT}" 2>&1 | grep -E '^(Authority|TeamIdentifier|Signature|Identifier)=' || true
 codesign -d -r- "${APP_OUT}" 2>&1 | tail -3
 codesign --verify --deep --strict "${APP_OUT}"
@@ -94,5 +93,5 @@ codesign --verify --deep --strict "${APP_OUT}"
 cd "${OUT_DIR}"
 ditto -c -k --sequesterRsrc --keepParent "${APP_NAME}.app" "${ZIP_NAME}"
 
-echo "✓ Listo: ${OUT_DIR}/${ZIP_NAME}"
+echo "Ready: ${OUT_DIR}/${ZIP_NAME}"
 ls -lh "${OUT_DIR}/${ZIP_NAME}"
