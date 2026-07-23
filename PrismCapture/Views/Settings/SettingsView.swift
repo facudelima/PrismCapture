@@ -5,7 +5,9 @@ import AppKit
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var updates = UpdateService.shared
     @State private var permissionOK = false
+    @State private var githubTokenDraft = UserDefaults.standard.string(forKey: "githubUpdateToken") ?? ""
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -22,6 +24,88 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
+                }
+
+                settingsCard(title: "Actualizaciones") {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Versión instalada")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("\(updates.displayVersion) (build \(updates.currentBuild))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        statusBadge
+                    }
+
+                    divider
+
+                    Text(updateDetailText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(updateDetailColor)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 8) {
+                        Button("Buscar ahora") {
+                            Task { await updates.checkForUpdates(silent: false) }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled({
+                            if case .checking = updates.status { return true }
+                            if case .downloading = updates.status { return true }
+                            if case .installing = updates.status { return true }
+                            return false
+                        }())
+
+                        if case .updateAvailable = updates.status {
+                            Button("Instalar…") {
+                                Task { await updates.downloadAndInstall() }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        }
+
+                        Button("Releases…") {
+                            updates.openReleasesPage()
+                        }
+                        .buttonStyle(.plain)
+                        .controlSize(.small)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    divider
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Token GitHub (opcional)")
+                            .font(.system(size: 13, weight: .medium))
+                        SecureField("ghp_… para repo privado", text: $githubTokenDraft)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                        HStack {
+                            Button("Guardar token") {
+                                let trimmed = githubTokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if trimmed.isEmpty {
+                                    UserDefaults.standard.removeObject(forKey: "githubUpdateToken")
+                                } else {
+                                    UserDefaults.standard.set(trimmed, forKey: "githubUpdateToken")
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            Button("Borrar") {
+                                githubTokenDraft = ""
+                                UserDefaults.standard.removeObject(forKey: "githubUpdateToken")
+                            }
+                            .buttonStyle(.plain)
+                            .controlSize(.small)
+                            .foregroundStyle(.secondary)
+                        }
+                        Text("El repo es privado: sin token usa el de Keychain (github.com) si existe.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 settingsCard(title: "Archivos") {
@@ -55,7 +139,6 @@ struct SettingsView: View {
                     Picker("Tema", selection: Binding(
                         get: { settings.theme },
                         set: { newValue in
-                            // Defer publish past the current SwiftUI render pass.
                             Task { @MainActor in
                                 await Task.yield()
                                 settings.applyTheme(newValue)
@@ -138,9 +221,10 @@ struct SettingsView: View {
             .padding(18)
         }
         .background(settingsChrome)
-        .frame(width: 460, height: 540)
+        .frame(width: 460, height: 620)
         .task {
             permissionOK = await PermissionService.shared.canCaptureScreens()
+            await updates.checkForUpdates(silent: true)
         }
         .onAppear { tintSettingsWindow() }
         .onChange(of: settings.theme) { _, _ in
@@ -154,6 +238,65 @@ struct SettingsView: View {
                 await Task.yield()
                 tintSettingsWindow()
             }
+        }
+    }
+
+    private var statusBadge: some View {
+        Text(badgeLabel)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(badgeColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background {
+                Capsule().fill(badgeColor.opacity(0.15))
+            }
+    }
+
+    private var badgeLabel: String {
+        switch updates.status {
+        case .upToDate: return "Al día"
+        case .updateAvailable: return "Nueva"
+        case .checking: return "…"
+        case .error: return "Error"
+        case .downloading: return "↓"
+        case .installing: return "…"
+        case .idle: return updates.displayVersion
+        }
+    }
+
+    private var badgeColor: Color {
+        switch updates.status {
+        case .updateAvailable: return .orange
+        case .upToDate: return .green
+        case .error: return .red
+        default: return .secondary
+        }
+    }
+
+    private var updateDetailText: String {
+        switch updates.status {
+        case .idle:
+            return "Todavía no se verificó contra GitHub."
+        case .checking:
+            return "Consultando releases…"
+        case .upToDate(_, let latest):
+            return "Última en GitHub: v\(latest). No hay nada nuevo."
+        case .updateAvailable(_, let latest, _, _):
+            return "Hay una versión nueva: v\(latest). Podés instalarla desde acá."
+        case .downloading(let p):
+            return "Descargando… \(Int(p * 100))%"
+        case .installing:
+            return "Reemplazando la app y reiniciando…"
+        case .error(let message):
+            return message
+        }
+    }
+
+    private var updateDetailColor: Color {
+        switch updates.status {
+        case .updateAvailable: return .orange
+        case .error: return .red
+        default: return .secondary
         }
     }
 
