@@ -63,10 +63,6 @@ final class SelectionMouseView: NSView {
         guard let viewModel else { return }
         viewModel.overlaySize = bounds.size
 
-        if viewModel.isWindowMode {
-            viewModel.hoverWindows(at: point)
-            return
-        }
         // Always start a new selection drag (capture happens on mouse up).
         viewModel.dragKind = .creating
         viewModel.selectionStart = point
@@ -78,22 +74,12 @@ final class SelectionMouseView: NSView {
         let point = convert(event.locationInWindow, from: nil)
         guard let viewModel else { return }
 
-        if viewModel.isWindowMode {
-            viewModel.hoverWindows(at: point)
-            return
-        }
         viewModel.handleSelectionMouseDragged(at: point)
     }
 
     override func mouseUp(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
         guard let viewModel else { return }
-
-        if viewModel.isWindowMode {
-            viewModel.hoverWindows(at: point)
-            viewModel.confirmSelection()
-            return
-        }
 
         viewModel.handleSelectionMouseDragged(at: point)
         viewModel.dragKind = .none
@@ -106,13 +92,7 @@ final class SelectionMouseView: NSView {
     }
 
     override func mouseMoved(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        guard let viewModel else { return }
-        if viewModel.isWindowMode {
-            viewModel.hoverWindows(at: point)
-        } else {
-            NSCursor.crosshair.set()
-        }
+        NSCursor.crosshair.set()
     }
 
     override func rightMouseDown(with event: NSEvent) {
@@ -123,9 +103,7 @@ final class SelectionMouseView: NSView {
         switch event.keyCode {
         case 53: // Esc
             viewModel?.cancelSelection()
-        case 49: // Space
-            viewModel?.isWindowMode.toggle()
-        case 36, 76: // Return / Enter — optional confirm if a selection is waiting (unused for area auto-capture)
+        case 36, 76: // Return / Enter
             viewModel?.confirmSelection()
         default:
             super.keyDown(with: event)
@@ -184,7 +162,6 @@ final class OverlayWindowController {
 
         viewModel.selectionRect = .zero
         viewModel.selectionStart = nil
-        viewModel.hoveredWindow = nil
         viewModel.isSelecting = true
 
         let frame = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }

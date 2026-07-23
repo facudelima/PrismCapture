@@ -6,17 +6,12 @@ struct SelectionOverlayView: View {
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.colorScheme) private var colorScheme
 
-    private var windowHighlightSwiftUI: CGRect? {
-        guard let bounds = viewModel.hoveredWindow?.bounds else { return nil }
-        return OverlayWindowController.shared.swiftUIRect(fromGlobalCocoa: bounds)
-    }
-
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 DimmedBackgroundView(
                     selection: viewModel.selectionRect,
-                    windowHighlight: windowHighlightSwiftUI
+                    windowHighlight: nil
                 )
                 .allowsHitTesting(false)
 
@@ -29,16 +24,6 @@ struct SelectionOverlayView: View {
                         .transition(.scale.combined(with: .opacity))
                         .allowsHitTesting(true)
                         .zIndex(10)
-                }
-
-                if viewModel.isWindowMode, let window = viewModel.hoveredWindow, let highlight = windowHighlightSwiftUI {
-                    Text(window.name)
-                        .font(.system(size: 12, weight: .semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .prismGlass(cornerRadius: 10)
-                        .position(x: highlight.midX, y: max(24, highlight.minY - 18))
-                        .allowsHitTesting(false)
                 }
 
                 if let toast = viewModel.toastMessage {

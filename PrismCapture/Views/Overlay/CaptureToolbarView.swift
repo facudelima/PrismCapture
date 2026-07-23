@@ -11,14 +11,6 @@ struct CaptureToolbarView: View {
             GlassIconButton(systemName: "xmark", help: "Cancelar (Esc)") {
                 viewModel.cancelSelection()
             }
-            divider
-            GlassIconButton(
-                systemName: viewModel.isWindowMode ? "macwindow" : "rectangle.dashed",
-                help: "Alternar ventana (Space)",
-                isSelected: viewModel.isWindowMode
-            ) {
-                viewModel.isWindowMode.toggle()
-            }
 
             sizeLabel
         }
@@ -26,13 +18,6 @@ struct CaptureToolbarView: View {
         .padding(.vertical, 6)
         .prismGlass(cornerRadius: 16)
         .animation(.prismSpring, value: viewModel.selectionRect)
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(.white.opacity(0.18))
-            .frame(width: 1, height: 18)
-            .padding(.horizontal, 4)
     }
 
     private var sizeLabel: some View {

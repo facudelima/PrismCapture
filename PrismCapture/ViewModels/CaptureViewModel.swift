@@ -15,9 +15,7 @@ final class CaptureViewModel: ObservableObject {
     @Published var isSelecting = false
     @Published var selectionRect: CGRect = .zero
     @Published var selectionStart: CGPoint?
-    @Published var hoveredWindow: (id: CGWindowID, name: String, bounds: CGRect)?
     @Published var toastMessage: String?
-    @Published var isWindowMode = false
     @Published var dragKind: SelectionDragKind = .none
 
     /// Overlay size in SwiftUI points (for clamping / toolbar hit tests).
@@ -34,9 +32,7 @@ final class CaptureViewModel: ObservableObject {
         self.delay = delay
         selectionRect = .zero
         selectionStart = nil
-        hoveredWindow = nil
         dragKind = .none
-        isWindowMode = (mode == .window)
 
         Task { @MainActor in
             let allowed = await PermissionService.shared.ensureScreenRecordingPermission()
@@ -60,15 +56,12 @@ final class CaptureViewModel: ObservableObject {
             case .area, .delayed:
                 self.isSelecting = true
                 self.overlay.showSelectionOverlay(viewModel: self)
-            case .window:
-                self.isSelecting = true
-                self.overlay.showSelectionOverlay(viewModel: self)
             }
         }
 
         if delay != .none && mode == .fullscreen {
             overlay.showCountdown(delay.rawValue, completion: run)
-        } else if delay != .none && mode != .area && mode != .window {
+        } else if delay != .none && mode != .area {
             overlay.showCountdown(delay.rawValue, completion: run)
         } else {
             run()
@@ -79,7 +72,6 @@ final class CaptureViewModel: ObservableObject {
         isSelecting = false
         selectionRect = .zero
         selectionStart = nil
-        hoveredWindow = nil
         dragKind = .none
         overlay.closeOverlay()
     }
@@ -185,32 +177,7 @@ final class CaptureViewModel: ObservableObject {
         return r
     }
 
-    func hoverWindows(at point: CGPoint) {
-        guard isWindowMode else { return }
-        let cocoaPoint = overlay.globalCocoaPoint(fromSwiftUI: point)
-        Task {
-            let windows = await captureService.listWindows()
-            hoveredWindow = windows.first { $0.bounds.contains(cocoaPoint) }
-        }
-    }
-
     func confirmSelection() {
-        if isWindowMode {
-            guard let window = hoveredWindow else { return }
-            let pinRect = overlay.swiftUIRect(fromGlobalCocoa: window.bounds)
-            Task {
-                do {
-                    // Capture first (our windows are excluded) — no artificial delay.
-                    let image = try await captureService.captureWindow(windowID: window.id)
-                    finish(with: image, pinRect: pinRect)
-                } catch {
-                    showToast(error.localizedDescription)
-                    cancelSelection()
-                }
-            }
-            return
-        }
-
         guard selectionRect.width > 4, selectionRect.height > 4 else { return }
 
         let pinRect = selectionRect
