@@ -75,9 +75,6 @@ struct MenuBarExtraView: View {
             menuRow("Pantalla completa", shortcut: settings.hotkeyFullscreen.displayString, icon: "rectangle.on.rectangle") {
                 appState.captureFullscreen()
             }
-            menuRow("Ventana", shortcut: settings.hotkeyWindow.displayString, icon: "macwindow") {
-                appState.captureWindow()
-            }
         }
     }
 

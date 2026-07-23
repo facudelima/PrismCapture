@@ -21,7 +21,6 @@ final class HotkeyService {
         let settings = AppSettings.shared
         install(binding: settings.hotkeyArea, id: 2, mode: .area)
         install(binding: settings.hotkeyFullscreen, id: 3, mode: .fullscreen)
-        install(binding: settings.hotkeyWindow, id: 4, mode: .window)
     }
 
     func unregister() {

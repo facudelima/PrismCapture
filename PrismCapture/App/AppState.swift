@@ -20,7 +20,6 @@ final class AppState: ObservableObject {
 
     func captureArea() { captureVM.start(mode: .area) }
     func captureFullscreen() { captureVM.start(mode: .fullscreen) }
-    func captureWindow() { captureVM.start(mode: .window) }
 
     /// Call before/with `SettingsLink`: agent apps need `.regular` so Settings can appear.
     func prepareSettingsPresentation() {

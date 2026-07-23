@@ -3,7 +3,6 @@ import Foundation
 enum CaptureMode: String, CaseIterable, Identifiable, Codable {
     case area
     case fullscreen
-    case window
     case delayed
 
     var id: String { rawValue }
@@ -12,7 +11,6 @@ enum CaptureMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .area: return "Área"
         case .fullscreen: return "Pantalla completa"
-        case .window: return "Ventana"
         case .delayed: return "Con retardo"
         }
     }
@@ -21,7 +19,6 @@ enum CaptureMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .area: return "rectangle.dashed"
         case .fullscreen: return "rectangle.on.rectangle"
-        case .window: return "macwindow"
         case .delayed: return "timer"
         }
     }

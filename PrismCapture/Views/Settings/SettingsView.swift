@@ -103,7 +103,6 @@ struct SettingsView: View {
                             set: { settings.hotkeyArea = $0 }
                         ),
                         isConflict: settings.hotkeyArea == settings.hotkeyFullscreen
-                            || settings.hotkeyArea == settings.hotkeyWindow
                     )
                     ShortcutRecorderButton(
                         title: "Pantalla completa",
@@ -112,16 +111,6 @@ struct SettingsView: View {
                             set: { settings.hotkeyFullscreen = $0 }
                         ),
                         isConflict: settings.hotkeyFullscreen == settings.hotkeyArea
-                            || settings.hotkeyFullscreen == settings.hotkeyWindow
-                    )
-                    ShortcutRecorderButton(
-                        title: "Ventana",
-                        binding: Binding(
-                            get: { settings.hotkeyWindow },
-                            set: { settings.hotkeyWindow = $0 }
-                        ),
-                        isConflict: settings.hotkeyWindow == settings.hotkeyArea
-                            || settings.hotkeyWindow == settings.hotkeyFullscreen
                     )
 
                     labeledShortcut("Copiar y cerrar", "⌘C")

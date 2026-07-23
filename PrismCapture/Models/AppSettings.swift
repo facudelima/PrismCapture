@@ -117,7 +117,6 @@ final class AppSettings: ObservableObject {
 
     @AppStorage("hotkeyAreaJSON") private var hotkeyAreaJSON = HotkeyBinding.areaDefault.jsonString
     @AppStorage("hotkeyFullscreenJSON") private var hotkeyFullscreenJSON = HotkeyBinding.fullscreenDefault.jsonString
-    @AppStorage("hotkeyWindowJSON") private var hotkeyWindowJSON = HotkeyBinding.windowDefault.jsonString
 
     private var themeObserver: NSObjectProtocol?
     private static let themeDefaultsKey = "theme"
@@ -207,15 +206,6 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    var hotkeyWindow: HotkeyBinding {
-        get { HotkeyBinding.decode(hotkeyWindowJSON) ?? .windowDefault }
-        set {
-            hotkeyWindowJSON = newValue.jsonString
-            objectWillChange.send()
-            HotkeyService.shared.reregister()
-        }
-    }
-
     var resolvedSaveFolder: URL {
         if !defaultSaveFolder.isEmpty {
             return URL(fileURLWithPath: defaultSaveFolder)
@@ -227,7 +217,6 @@ final class AppSettings: ObservableObject {
     func resetHotkeys() {
         hotkeyArea = .areaDefault
         hotkeyFullscreen = .fullscreenDefault
-        hotkeyWindow = .windowDefault
     }
 }
 

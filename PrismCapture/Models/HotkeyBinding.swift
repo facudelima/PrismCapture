@@ -9,7 +9,6 @@ struct HotkeyBinding: Codable, Equatable, Hashable {
 
     static let areaDefault = HotkeyBinding(keyCode: UInt32(kVK_ANSI_2), carbonModifiers: UInt32(cmdKey | shiftKey))
     static let fullscreenDefault = HotkeyBinding(keyCode: UInt32(kVK_ANSI_3), carbonModifiers: UInt32(cmdKey | shiftKey))
-    static let windowDefault = HotkeyBinding(keyCode: UInt32(kVK_ANSI_4), carbonModifiers: UInt32(cmdKey | shiftKey))
 
     var displayString: String {
         var parts: [String] = []
