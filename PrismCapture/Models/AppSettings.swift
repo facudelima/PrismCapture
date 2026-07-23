@@ -136,8 +136,9 @@ final class AppSettings: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                guard let self, self.theme == .system else { return }
+            guard let self else { return }
+            Task { @MainActor [self] in
+                guard self.theme == .system else { return }
                 self.applyAppearance()
             }
         }

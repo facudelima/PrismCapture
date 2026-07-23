@@ -66,11 +66,12 @@ final class AppState: ObservableObject {
             object: settingsWindow,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            guard let self else { return }
+            Task { @MainActor [self] in
                 NSApp.setActivationPolicy(.accessory)
-                if let observer = self?.settingsCloseObserver {
+                if let observer = self.settingsCloseObserver {
                     NotificationCenter.default.removeObserver(observer)
-                    self?.settingsCloseObserver = nil
+                    self.settingsCloseObserver = nil
                 }
             }
         }
