@@ -8,9 +8,14 @@ App nativa de capturas para macOS, inspirada en Lightshot / CleanShot X.
 
 1. Andá a [**Releases**](https://github.com/facudelima/PrismCapture/releases)
 2. Bajá `PrismCapture-*-macos.zip`
-3. Descomprimí y abrí `PrismCapture.app` (clic derecho → **Abrir** la primera vez)
+3. Descomprimí y mové `PrismCapture.app` a **Aplicaciones**
+4. Primera vez: clic derecho → **Abrir** (Gatekeeper)
 
 Requiere **macOS 14+** y permiso de **Grabación de pantalla**.
+
+### Actualizaciones
+
+La app muestra la versión en el menú bar y en **Ajustes → Actualizaciones**. Puede buscar la última release en GitHub e instalarla. Como el repo es privado, usa el token de Keychain (`github.com`) o un PAT en Ajustes.
 
 ## Requisitos (desarrollo)
 
