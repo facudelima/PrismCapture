@@ -3,10 +3,14 @@ import AppKit
 
 /// Lightshot-style editor: screenshot pinned where it was captured, toolbar floating under it.
 /// Drag with the Select/Mover tool to pan the frame — the image re-captures what's underneath.
+/// Fullscreen captures pass `allowsPinMove: false` so the frame stays fixed.
 struct InPlaceEditorView: View {
     @ObservedObject var annotationVM: AnnotationViewModel
     @ObservedObject var captureVM: CaptureViewModel
     @EnvironmentObject private var settings: AppSettings
+
+    /// When false (fullscreen), dragging must not pan/recapture into an area shot.
+    let allowsPinMove: Bool
 
     @State private var livePin: CGRect
     @State private var isMovingPin = false
@@ -14,9 +18,15 @@ struct InPlaceEditorView: View {
     @State private var recaptureToken = 0
     @FocusState private var editorFocused: Bool
 
-    init(annotationVM: AnnotationViewModel, captureVM: CaptureViewModel, pinRect: CGRect) {
+    init(
+        annotationVM: AnnotationViewModel,
+        captureVM: CaptureViewModel,
+        pinRect: CGRect,
+        allowsPinMove: Bool = true
+    ) {
         self.annotationVM = annotationVM
         self.captureVM = captureVM
+        self.allowsPinMove = allowsPinMove
         _livePin = State(initialValue: pinRect)
     }
 
@@ -35,7 +45,7 @@ struct InPlaceEditorView: View {
                 StableAnnotationCanvas(
                     viewModel: annotationVM,
                     canvasSize: livePin.size,
-                    onMovePin: movePin(by:)
+                    onMovePin: allowsPinMove ? movePin(by:) : nil
                 )
                 .opacity(isMovingPin ? 0 : 1)
 
@@ -122,6 +132,7 @@ struct InPlaceEditorView: View {
     }
 
     private func movePin(by delta: CGSize) {
+        guard allowsPinMove else { return }
         if delta == .zero {
             // Drag ended → snap a fresh capture of what's inside the frame.
             scheduleRecapture()
@@ -402,8 +413,9 @@ final class AnnotationMouseView: NSView {
             return
         }
 
-        // Select tool (default): drag moves the whole capture on screen.
+        // Select tool (default): drag moves the whole capture on screen (area only).
         if viewModel.selectedTool == .select {
+            guard onMovePin != nil else { return }
             isMovingPin = true
             lastWindowPoint = event.locationInWindow
             NSCursor.closedHand.set()
@@ -461,7 +473,7 @@ final class AnnotationMouseView: NSView {
 
     override func resetCursorRects() {
         guard let viewModel else { return }
-        if viewModel.selectedTool == .select {
+        if viewModel.selectedTool == .select, onMovePin != nil {
             addCursorRect(bounds, cursor: .openHand)
         }
     }

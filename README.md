@@ -13,6 +13,8 @@ Requiere **macOS 14+** y permiso de **Grabación de pantalla**.
 
 La versión instalada se muestra en el menú bar y en Ajustes → Acerca de. La app puede buscar e instalar actualizaciones desde Releases (sin configuración extra).
 
+La interfaz sigue el **idioma del sistema** (hoy: inglés y español).
+
 > El repo es **público** para que las actualizaciones funcionen sin tokens.
 
 ## Requisitos (desarrollo)

@@ -242,7 +242,12 @@ final class OverlayWindowController {
         overlayWindow = nil
     }
 
-    func showInPlaceEditor(image: NSImage, pinRect: CGRect, captureVM: CaptureViewModel) {
+    func showInPlaceEditor(
+        image: NSImage,
+        pinRect: CGRect,
+        captureVM: CaptureViewModel,
+        allowsPinMove: Bool = true
+    ) {
         closeEditor()
         removeEditorKeyMonitor()
 
@@ -256,7 +261,8 @@ final class OverlayWindowController {
         let root = InPlaceEditorView(
             annotationVM: annotationVM,
             captureVM: captureVM,
-            pinRect: pinRect
+            pinRect: pinRect,
+            allowsPinMove: allowsPinMove
         )
         .environmentObject(AppSettings.shared)
         .preferredColorScheme(AppSettings.shared.theme.colorScheme)
@@ -342,7 +348,8 @@ final class OverlayWindowController {
             width: width,
             height: height
         )
-        showInPlaceEditor(image: image, pinRect: pin, captureVM: viewModel)
+        // Fullscreen capture: pin is a preview frame — never allow Lightshot-style pan/recapture.
+        showInPlaceEditor(image: image, pinRect: pin, captureVM: viewModel, allowsPinMove: false)
     }
 
     func closeEditor() {
