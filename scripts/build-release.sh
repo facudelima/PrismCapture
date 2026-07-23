@@ -34,6 +34,7 @@ mkdir -p "${OUT_DIR}"
 
 echo "Building Release..."
 set +e
+BUILD_STATUS=1
 xcodebuild \
   -project PrismCapture.xcodeproj \
   -scheme PrismCapture \
@@ -41,7 +42,7 @@ xcodebuild \
   -derivedDataPath "${OUT_DIR}/DerivedData" \
   -archivePath "${ARCHIVE_PATH}" \
   archive \
-  CODE_SIGN_IDENTITY=- \
+  CODE_SIGN_IDENTITY='-' \
   CODE_SIGNING_ALLOWED=YES \
   CODE_SIGNING_REQUIRED=NO \
   >"${LOG_FILE}" 2>&1
