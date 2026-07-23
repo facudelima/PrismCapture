@@ -29,5 +29,9 @@ final class PrismAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         AppSettings.shared.applyAppearance()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await UpdateService.shared.checkForUpdates(silent: true)
+        }
     }
 }

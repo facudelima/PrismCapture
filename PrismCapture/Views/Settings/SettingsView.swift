@@ -5,6 +5,7 @@ import AppKit
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var updates = UpdateService.shared
     @State private var permissionOK = false
     @Environment(\.colorScheme) private var colorScheme
 
@@ -151,17 +152,41 @@ struct SettingsView: View {
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundStyle(.secondary)
                     }
-                    Text("Descargá nuevas versiones desde Releases en GitHub.")
+
+                    Text(aboutStatusText)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(aboutStatusColor)
+
+                    HStack(spacing: 8) {
+                        if case .available(let latest, _) = updates.status {
+                            Button("Actualizar a v\(latest)") {
+                                Task { await updates.installAvailableUpdate() }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        } else {
+                            Button("Buscar actualizaciones") {
+                                Task { await updates.checkForUpdates(silent: false) }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .disabled({
+                                if case .checking = updates.status { return true }
+                                if case .downloading = updates.status { return true }
+                                if case .installing = updates.status { return true }
+                                return false
+                            }())
+                        }
+                    }
                 }
             }
             .padding(18)
         }
         .background(settingsChrome)
-        .frame(width: 460, height: 560)
+        .frame(width: 460, height: 580)
         .task {
             permissionOK = await PermissionService.shared.canCaptureScreens()
+            await updates.checkForUpdates(silent: true)
         }
         .onAppear { tintSettingsWindow() }
         .onChange(of: settings.theme) { _, _ in
@@ -175,6 +200,26 @@ struct SettingsView: View {
                 await Task.yield()
                 tintSettingsWindow()
             }
+        }
+    }
+
+    private var aboutStatusText: String {
+        switch updates.status {
+        case .idle: return "Podés buscar si hay una versión nueva."
+        case .checking: return "Buscando…"
+        case .upToDate: return "Estás al día."
+        case .available(let latest, _): return "Hay una versión nueva: v\(latest)."
+        case .downloading(let p): return "Descargando… \(Int(p * 100))%"
+        case .installing: return "Instalando y reiniciando…"
+        case .error(let message): return message
+        }
+    }
+
+    private var aboutStatusColor: Color {
+        switch updates.status {
+        case .available: return .orange
+        case .error: return .red
+        default: return .secondary
         }
     }
 
