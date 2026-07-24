@@ -42,11 +42,10 @@ struct MenuBarExtraView: View {
     private var header: some View {
         HStack(spacing: 10) {
             Image("MenuBarPrism")
-                .renderingMode(.template)
+                .renderingMode(.original)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 20, height: 20)
-                .foregroundStyle(.primary)
             VStack(alignment: .leading, spacing: 2) {
                 Text("PrismCapture")
                     .font(.system(size: 15, weight: .semibold))

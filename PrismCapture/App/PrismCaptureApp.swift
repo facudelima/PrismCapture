@@ -8,7 +8,7 @@ struct PrismCaptureApp: App {
     @StateObject private var settings = AppSettings.shared
 
     var body: some Scene {
-        // `image:` loads the template asset reliably in the status item.
+        // Asset catalog has Any + Dark appearances (original, two-tone prism).
         MenuBarExtra("PrismCapture", image: "MenuBarPrism") {
             MenuBarExtraView()
                 .environmentObject(appState)
