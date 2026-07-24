@@ -3,27 +3,44 @@ import AppKit
 
 struct SelectionOverlayView: View {
     @ObservedObject var viewModel: CaptureViewModel
+    /// Top-left of this screen inside the global multi-monitor overlay space.
+    var screenOriginInOverlay: CGPoint = .zero
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { geo in
+            let localSelection = viewModel.selectionRect.offsetBy(
+                dx: -screenOriginInOverlay.x,
+                dy: -screenOriginInOverlay.y
+            )
+            let toolbarGlobal = viewModel.toolbarCenter(in: viewModel.overlaySize)
+            let toolbarLocal = CGPoint(
+                x: toolbarGlobal.x - screenOriginInOverlay.x,
+                y: toolbarGlobal.y - screenOriginInOverlay.y
+            )
+            let toolbarVisible = CGRect(origin: .zero, size: geo.size)
+                .insetBy(dx: -40, dy: -40)
+                .contains(toolbarLocal)
+
             ZStack {
                 DimmedBackgroundView(
-                    selection: viewModel.selectionRect,
+                    selection: localSelection,
                     windowHighlight: nil
                 )
                 .allowsHitTesting(false)
 
-                if viewModel.selectionRect.width > 2, viewModel.selectionRect.height > 2 {
-                    selectionChrome
+                if localSelection.width > 2, localSelection.height > 2 {
+                    selectionChrome(for: localSelection)
                         .allowsHitTesting(false)
 
-                    CaptureToolbarView(viewModel: viewModel)
-                        .position(viewModel.toolbarCenter(in: geo.size))
-                        .transition(.scale.combined(with: .opacity))
-                        .allowsHitTesting(true)
-                        .zIndex(10)
+                    if toolbarVisible {
+                        CaptureToolbarView(viewModel: viewModel)
+                            .position(toolbarLocal)
+                            .transition(.scale.combined(with: .opacity))
+                            .allowsHitTesting(true)
+                            .zIndex(10)
+                    }
                 }
 
                 if let toast = viewModel.toastMessage {
@@ -33,12 +50,6 @@ struct SelectionOverlayView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear {
-                viewModel.overlaySize = geo.size
-            }
-            .onChange(of: geo.size) { _, newSize in
-                viewModel.overlaySize = newSize
-            }
         }
         .ignoresSafeArea()
         .preferredColorScheme(settings.theme.colorScheme)
@@ -50,7 +61,7 @@ struct SelectionOverlayView: View {
         }
     }
 
-    private var selectionChrome: some View {
+    private func selectionChrome(for localSelection: CGRect) -> some View {
         let border = colorScheme == .dark ? Color.white.opacity(0.95) : Color.white.opacity(0.98)
         return RoundedRectangle(cornerRadius: 2, style: .continuous)
             .strokeBorder(border, lineWidth: 1.5)
@@ -59,7 +70,7 @@ struct SelectionOverlayView: View {
                     .strokeBorder(Color.accentColor.opacity(0.5), lineWidth: 3)
                     .blur(radius: 0.4)
             }
-            .frame(width: viewModel.selectionRect.width, height: viewModel.selectionRect.height)
-            .position(x: viewModel.selectionRect.midX, y: viewModel.selectionRect.midY)
+            .frame(width: localSelection.width, height: localSelection.height)
+            .position(x: localSelection.midX, y: localSelection.midY)
     }
 }

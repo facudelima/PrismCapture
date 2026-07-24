@@ -27,8 +27,11 @@ final class SelectionOverlayWindow: NSWindow {
 }
 
 /// Forwards mouse events reliably into the capture view model.
+/// Coordinates are converted to the global multi-screen overlay space (top-left origin).
 final class SelectionMouseView: NSView {
     var viewModel: CaptureViewModel?
+    /// Top-left of this screen inside the global overlay coordinate space.
+    var screenOriginInOverlay: CGPoint = .zero
     private var tracking: NSTrackingArea?
 
     override var acceptsFirstResponder: Bool { true }
@@ -43,14 +46,13 @@ final class SelectionMouseView: NSView {
     override func layout() {
         super.layout()
         updateTracking()
-        viewModel?.overlaySize = bounds.size
     }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     /// Let SwiftUI receive clicks on the floating capture toolbar.
     override func hitTest(_ point: NSPoint) -> NSView? {
-        if let viewModel, viewModel.isPointInToolbar(point) {
+        if let viewModel, viewModel.isPointInToolbar(toGlobal(point)) {
             return nil
         }
         return super.hitTest(point)
@@ -59,11 +61,10 @@ final class SelectionMouseView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        let point = convert(event.locationInWindow, from: nil)
+        let point = toGlobal(convert(event.locationInWindow, from: nil))
         guard let viewModel else { return }
-        viewModel.overlaySize = bounds.size
 
-        // Always start a new selection drag (capture happens on mouse up).
+        // Always start a new selection drag (capture happens on mouse up via drag monitor).
         viewModel.dragKind = .creating
         viewModel.selectionStart = point
         viewModel.selectionRect = CGRect(origin: point, size: .zero)
@@ -71,24 +72,11 @@ final class SelectionMouseView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        guard let viewModel else { return }
-
-        viewModel.handleSelectionMouseDragged(at: point)
+        // Handled by OverlayWindowController selection drag monitor (cross-screen safe).
     }
 
     override func mouseUp(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        guard let viewModel else { return }
-
-        viewModel.handleSelectionMouseDragged(at: point)
-        viewModel.dragKind = .none
-        if viewModel.selectionRect.width > 4, viewModel.selectionRect.height > 4 {
-            viewModel.confirmSelection()
-        } else {
-            viewModel.selectionStart = nil
-            viewModel.selectionRect = .zero
-        }
+        // Handled by OverlayWindowController selection drag monitor (cross-screen safe).
     }
 
     override func mouseMoved(with event: NSEvent) {
@@ -108,6 +96,10 @@ final class SelectionMouseView: NSView {
         default:
             super.keyDown(with: event)
         }
+    }
+
+    private func toGlobal(_ local: CGPoint) -> CGPoint {
+        CGPoint(x: screenOriginInOverlay.x + local.x, y: screenOriginInOverlay.y + local.y)
     }
 
     private func updateTracking() {
@@ -143,19 +135,22 @@ struct SelectionOverlayHost: NSViewRepresentable {
     }
 }
 
-// Kept for compatibility; overlay now embeds SelectionMouseView directly in AppKit.
-
 @MainActor
 final class OverlayWindowController {
     static let shared = OverlayWindowController()
 
+    /// Union of all screens in Cocoa coordinates (used for global overlay math).
     private(set) var overlayFrame: CGRect = .zero
-    private var overlayWindow: SelectionOverlayWindow?
+    /// One borderless window per screen — required when displays differ in scale (Retina + 1080p).
+    private var overlayWindows: [SelectionOverlayWindow] = []
     private var editorWindow: NSWindow?
     private var countdownWindow: NSWindow?
     /// Esc / shortcuts must work even before the canvas receives focus (SwiftUI `.onKeyPress` alone is flaky).
     private var editorKeyMonitor: Any?
     private var editorCancelTextEdit: (() -> Bool)?
+    /// Tracks drag across multiple per-screen windows (mouseDragged stays on the mouseDown window).
+    private var selectionDragMonitor: Any?
+    private weak var selectionViewModel: CaptureViewModel?
 
     func showSelectionOverlay(viewModel: CaptureViewModel) {
         closeOverlay()
@@ -163,51 +158,121 @@ final class OverlayWindowController {
         viewModel.selectionRect = .zero
         viewModel.selectionStart = nil
         viewModel.isSelecting = true
+        selectionViewModel = viewModel
 
-        let frame = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
-        overlayFrame = frame.isNull ? (NSScreen.main?.frame ?? .zero) : frame
+        overlayFrame = Self.screensUnionFrame()
+        viewModel.overlaySize = overlayFrame.size
 
-        let window = SelectionOverlayWindow(
-            contentRect: overlayFrame,
-            styleMask: [.borderless, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        window.commonInit()
+        var keyMouseView: SelectionMouseView?
 
-        let container = NSView(frame: CGRect(origin: .zero, size: overlayFrame.size))
-        container.wantsLayer = true
+        for screen in NSScreen.screens {
+            let origin = screenOriginInOverlay(for: screen)
+            let window = SelectionOverlayWindow(
+                contentRect: screen.frame,
+                styleMask: [.borderless, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            window.commonInit()
 
-        let visual = NSHostingView(
-            rootView: SelectionOverlayView(viewModel: viewModel)
+            let container = NSView(frame: CGRect(origin: .zero, size: screen.frame.size))
+            container.wantsLayer = true
+
+            let visual = NSHostingView(
+                rootView: SelectionOverlayView(
+                    viewModel: viewModel,
+                    screenOriginInOverlay: origin
+                )
                 .environmentObject(AppSettings.shared)
                 .preferredColorScheme(AppSettings.shared.theme.colorScheme)
-                .frame(width: overlayFrame.width, height: overlayFrame.height)
-        )
-        visual.frame = container.bounds
-        visual.autoresizingMask = [.width, .height]
+                .frame(width: screen.frame.width, height: screen.frame.height)
+            )
+            visual.frame = container.bounds
+            visual.autoresizingMask = [.width, .height]
 
-        let mouseView = SelectionMouseView(frame: container.bounds)
-        mouseView.viewModel = viewModel
-        mouseView.autoresizingMask = [.width, .height]
+            let mouseView = SelectionMouseView(frame: container.bounds)
+            mouseView.viewModel = viewModel
+            mouseView.screenOriginInOverlay = origin
+            mouseView.autoresizingMask = [.width, .height]
 
-        // Visual behind, mouse catcher on top.
-        container.addSubview(visual)
-        container.addSubview(mouseView)
+            container.addSubview(visual)
+            container.addSubview(mouseView)
 
-        window.contentView = container
-        window.setFrame(overlayFrame, display: true)
-        window.orderFrontRegardless()
-        window.makeKeyAndOrderFront(nil)
-        window.makeFirstResponder(mouseView)
+            window.contentView = container
+            window.setFrame(screen.frame, display: true)
+            window.orderFrontRegardless()
+
+            overlayWindows.append(window)
+            if screen == NSScreen.main || keyMouseView == nil {
+                keyMouseView = mouseView
+            }
+        }
+
+        if let keyWindow = overlayWindows.first(where: { $0.screen == NSScreen.main }) ?? overlayWindows.first {
+            keyWindow.makeKeyAndOrderFront(nil)
+            if let keyMouseView {
+                keyWindow.makeFirstResponder(keyMouseView)
+            }
+        }
         NSApp.activate(ignoringOtherApps: true)
+        installSelectionDragMonitor()
+    }
 
-        overlayWindow = window
+    /// Converts `NSEvent.mouseLocation` (Cocoa global) into overlay top-left space.
+    func overlayPointFromMouseLocation(_ cocoaPoint: CGPoint = NSEvent.mouseLocation) -> CGPoint {
+        CGPoint(
+            x: cocoaPoint.x - overlayFrame.minX,
+            y: overlayFrame.maxY - cocoaPoint.y
+        )
+    }
+
+    private func installSelectionDragMonitor() {
+        removeSelectionDragMonitor()
+        selectionDragMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDragged, .leftMouseUp]
+        ) { [weak self] event in
+            guard let self, let vm = self.selectionViewModel else { return event }
+            let point = self.overlayPointFromMouseLocation()
+            switch event.type {
+            case .leftMouseDragged:
+                guard vm.dragKind == .creating || vm.dragKind == .moving else { return event }
+                vm.handleSelectionMouseDragged(at: point)
+                return nil
+            case .leftMouseUp:
+                guard vm.dragKind == .creating || vm.dragKind == .moving else { return event }
+                vm.handleSelectionMouseDragged(at: point)
+                vm.dragKind = .none
+                if vm.selectionRect.width > 4, vm.selectionRect.height > 4 {
+                    vm.confirmSelection()
+                } else {
+                    vm.selectionStart = nil
+                    vm.selectionRect = .zero
+                }
+                return nil
+            default:
+                return event
+            }
+        }
+    }
+
+    private func removeSelectionDragMonitor() {
+        if let selectionDragMonitor {
+            NSEvent.removeMonitor(selectionDragMonitor)
+            self.selectionDragMonitor = nil
+        }
+    }
+
+    /// Top-left of `screen` inside the global overlay (top-left origin) coordinate space.
+    func screenOriginInOverlay(for screen: NSScreen) -> CGPoint {
+        CGPoint(
+            x: screen.frame.minX - overlayFrame.minX,
+            y: overlayFrame.maxY - screen.frame.maxY
+        )
     }
 
     /// Converts a rect from SwiftUI overlay space (origin top-left) to global Cocoa (origin bottom-left).
     func globalCocoaRect(fromSwiftUI rect: CGRect) -> CGRect {
-        let frame = overlayWindow?.frame ?? overlayFrame
+        let frame = overlayFrame
         return CGRect(
             x: frame.origin.x + rect.origin.x,
             y: frame.origin.y + (frame.height - rect.origin.y - rect.height),
@@ -217,7 +282,7 @@ final class OverlayWindowController {
     }
 
     func globalCocoaPoint(fromSwiftUI point: CGPoint) -> CGPoint {
-        let frame = overlayWindow?.frame ?? overlayFrame
+        let frame = overlayFrame
         return CGPoint(
             x: frame.origin.x + point.x,
             y: frame.origin.y + (frame.height - point.y)
@@ -226,7 +291,7 @@ final class OverlayWindowController {
 
     /// Converts a global Cocoa rect (origin bottom-left) into SwiftUI overlay space (origin top-left).
     func swiftUIRect(fromGlobalCocoa rect: CGRect) -> CGRect {
-        let frame = overlayWindow?.frame ?? overlayFrame
+        let frame = overlayFrame
         return CGRect(
             x: rect.origin.x - frame.origin.x,
             y: frame.height - (rect.origin.y - frame.origin.y) - rect.height,
@@ -237,9 +302,13 @@ final class OverlayWindowController {
 
     func closeOverlay() {
         removeEditorKeyMonitor()
+        removeSelectionDragMonitor()
         editorCancelTextEdit = nil
-        overlayWindow?.orderOut(nil)
-        overlayWindow = nil
+        selectionViewModel = nil
+        for window in overlayWindows {
+            window.orderOut(nil)
+        }
+        overlayWindows.removeAll()
     }
 
     func showInPlaceEditor(
@@ -248,10 +317,24 @@ final class OverlayWindowController {
         captureVM: CaptureViewModel,
         allowsPinMove: Bool = true
     ) {
+        // Convert while overlayFrame still matches pinRect's coordinate space.
+        let cocoaPin = globalCocoaRect(fromSwiftUI: pinRect)
+
         closeEditor()
         removeEditorKeyMonitor()
+        closeOverlay()
 
-        let annotationVM = AnnotationViewModel(image: image, canvasSize: pinRect.size)
+        // Pin the editor on the screen that contains the capture (avoids Retina/1080p span bugs).
+        let screen = NSScreen.screens.first {
+            $0.frame.contains(CGPoint(x: cocoaPin.midX, y: cocoaPin.midY))
+        } ?? CaptureService.shared.screenUnderMouse() ?? NSScreen.main ?? NSScreen.screens.first
+
+        guard let screen else { return }
+
+        overlayFrame = screen.frame
+        let localPin = swiftUIRect(fromGlobalCocoa: cocoaPin)
+
+        let annotationVM = AnnotationViewModel(image: image, canvasSize: localPin.size)
         editorCancelTextEdit = { [weak annotationVM] in
             guard let annotationVM, annotationVM.isEditingText else { return false }
             annotationVM.cancelTextEdit()
@@ -261,38 +344,31 @@ final class OverlayWindowController {
         let root = InPlaceEditorView(
             annotationVM: annotationVM,
             captureVM: captureVM,
-            pinRect: pinRect,
+            pinRect: localPin,
             allowsPinMove: allowsPinMove
         )
         .environmentObject(AppSettings.shared)
         .preferredColorScheme(AppSettings.shared.theme.colorScheme)
 
-        // Reuse / recreate the fullscreen overlay so editing happens where the capture was.
-        if overlayWindow == nil {
-            let frame = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
-            overlayFrame = frame.isNull ? (NSScreen.main?.frame ?? .zero) : frame
-
-            let window = SelectionOverlayWindow(
-                contentRect: overlayFrame,
-                styleMask: [.borderless, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            window.commonInit()
-            overlayWindow = window
-        }
-
-        guard let window = overlayWindow else { return }
+        let window = SelectionOverlayWindow(
+            contentRect: screen.frame,
+            styleMask: [.borderless, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.commonInit()
         window.appearance = AppSettings.shared.theme.resolvedWindowAppearance()
 
         let hosting = NSHostingView(rootView: root)
-        hosting.frame = CGRect(origin: .zero, size: overlayFrame.size)
+        hosting.frame = CGRect(origin: .zero, size: screen.frame.size)
         window.contentView = hosting
-        window.setFrame(overlayFrame, display: true)
+        window.setFrame(screen.frame, display: true)
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
         window.makeFirstResponder(hosting)
         NSApp.activate(ignoringOtherApps: true)
+
+        overlayWindows = [window]
         installEditorKeyMonitor()
     }
 
@@ -327,14 +403,12 @@ final class OverlayWindowController {
     }
 
     func showEditor(image: NSImage, viewModel: CaptureViewModel) {
-        // Legacy window editor — redirect to in-place centered pin.
-        let overlay = overlayFrame.isEmpty
-            ? (NSScreen.main?.frame ?? CGRect(x: 0, y: 0, width: 1200, height: 800))
-            : overlayFrame
-        // Convert main screen frame to swiftUI-ish top-left within overlay if needed.
-        // For fullscreen captures, pin a fitted rect in the center of the overlay.
-        let maxW = min(overlay.width * 0.72, 1100)
-        let maxH = min(overlay.height * 0.72, 780)
+        let screen = CaptureService.shared.screenUnderMouse() ?? NSScreen.main
+        overlayFrame = screen?.frame
+            ?? CGRect(x: 0, y: 0, width: 1200, height: 800)
+
+        let maxW = min(overlayFrame.width * 0.72, 1100)
+        let maxH = min(overlayFrame.height * 0.72, 780)
         let aspect = max(image.size.width, 1) / max(image.size.height, 1)
         var width = maxW
         var height = width / aspect
@@ -375,7 +449,15 @@ final class OverlayWindowController {
         window.level = .floating
         window.hasShadow = false
         window.contentView = hosting
-        window.center()
+        if let screen = CaptureService.shared.screenUnderMouse() {
+            let f = screen.frame
+            window.setFrameOrigin(NSPoint(
+                x: f.midX - 80,
+                y: f.midY - 80
+            ))
+        } else {
+            window.center()
+        }
         window.makeKeyAndOrderFront(nil)
         countdownWindow = window
     }
@@ -383,6 +465,11 @@ final class OverlayWindowController {
     func closeCountdown() {
         countdownWindow?.orderOut(nil)
         countdownWindow = nil
+    }
+
+    private static func screensUnionFrame() -> CGRect {
+        let frame = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
+        return frame.isNull ? (NSScreen.main?.frame ?? .zero) : frame
     }
 }
 
@@ -424,17 +511,5 @@ private struct CountdownView: View {
             remaining -= 1
             tick()
         }
-    }
-}
-
-private extension NSView {
-    func findSubview<T: NSView>(ofType type: T.Type) -> T? {
-        if let match = self as? T { return match }
-        for sub in subviews {
-            if let found = sub.findSubview(ofType: type) {
-                return found
-            }
-        }
-        return nil
     }
 }
