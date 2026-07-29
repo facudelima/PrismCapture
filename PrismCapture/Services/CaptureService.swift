@@ -108,49 +108,24 @@ final class CaptureService {
         )
 
         let scale = screen.backingScaleFactor
-        let fullPixel = safePixelSize(width: screenFrame.width, height: screenFrame.height, scale: scale)
+        let cropPixelSize = safePixelSize(width: cropPoints.width, height: cropPoints.height, scale: scale)
 
         let ownWindows = content.windows.filter {
             $0.owningApplication?.bundleIdentifier == Bundle.main.bundleIdentifier
         }
         let filter = SCContentFilter(display: selectedDisplay, excludingWindows: ownWindows)
         let config = SCStreamConfiguration()
-        // Capture the whole display, then crop — avoids fragile SCStream sourceRect
-        // across mixed-DPI layouts (Retina laptop + 1080p external).
-        config.width = fullPixel.width
-        config.height = fullPixel.height
+        // Ask ScreenCaptureKit to crop at the source: only the selected region is
+        // captured/encoded/transferred, instead of grabbing the whole display and
+        // cropping in software. This is what made area captures feel laggy.
+        config.sourceRect = cropPoints
+        config.width = cropPixelSize.width
+        config.height = cropPixelSize.height
         config.scalesToFit = false
         config.showsCursor = false
         config.captureResolution = .best
 
-        let fullImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-
-        let isFullScreen = abs(cropPoints.width - screenFrame.width) < 0.5
-            && abs(cropPoints.height - screenFrame.height) < 0.5
-            && abs(cropPoints.minX) < 0.5
-            && abs(cropPoints.minY) < 0.5
-
-        let cgImage: CGImage
-        if isFullScreen {
-            cgImage = fullImage
-        } else {
-            let pixelCrop = CGRect(
-                x: (cropPoints.minX * scale).rounded(.towardZero),
-                y: (cropPoints.minY * scale).rounded(.towardZero),
-                width: (cropPoints.width * scale).rounded(.toNearestOrAwayFromZero),
-                height: (cropPoints.height * scale).rounded(.toNearestOrAwayFromZero)
-            ).integral
-
-            let clamped = pixelCrop.intersection(
-                CGRect(x: 0, y: 0, width: fullImage.width, height: fullImage.height)
-            )
-            guard !clamped.isNull, clamped.width >= 1, clamped.height >= 1,
-                  let cropped = fullImage.cropping(to: clamped)
-            else {
-                throw CaptureError.invalidRegion
-            }
-            cgImage = cropped
-        }
+        let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
 
         return NSImage(
             cgImage: cgImage,
