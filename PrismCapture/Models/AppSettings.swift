@@ -5,7 +5,6 @@ import AppKit
 enum ImageFormat: String, CaseIterable, Identifiable, Codable {
     case png
     case jpeg
-    case webp
 
     var id: String { rawValue }
 
@@ -17,7 +16,6 @@ enum ImageFormat: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .png: return "public.png"
         case .jpeg: return "public.jpeg"
-        case .webp: return "public.webp"
         }
     }
 }

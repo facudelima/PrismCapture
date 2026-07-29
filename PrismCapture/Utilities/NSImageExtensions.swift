@@ -18,8 +18,6 @@ extension NSImage {
             type = UTType.png.identifier as CFString
         case .jpeg:
             type = UTType.jpeg.identifier as CFString
-        case .webp:
-            type = (UTType(filenameExtension: "webp") ?? .png).identifier as CFString
         }
 
         guard let destination = CGImageDestinationCreateWithData(mutable, type, 1, nil) else {
