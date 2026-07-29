@@ -70,17 +70,24 @@ struct EditorToolbarView: View {
                 OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
             }
             GlassIconButton(systemName: "square.and.arrow.down", help: L10n.string("Save (⌘S)")) {
-                if let url = FileService.shared.savePanel(image: viewModel.renderedImage(), format: settings.imageFormat) {
+                let image = viewModel.renderedImage()
+                let remoteURL = viewModel.remoteURL
+                let ocrText = viewModel.ocrText
+                let format = settings.imageFormat
+                let clipboardBehavior = settings.clipboardBehavior
+
+                OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+
+                if let url = FileService.shared.savePanel(image: image, format: format) {
                     HistoryViewModel.shared.add(
-                        image: viewModel.renderedImage(),
+                        image: image,
                         fileURL: url,
-                        remoteURL: viewModel.remoteURL,
-                        ocrText: viewModel.ocrText.isEmpty ? nil : viewModel.ocrText
+                        remoteURL: remoteURL,
+                        ocrText: ocrText.isEmpty ? nil : ocrText
                     )
-                    if settings.clipboardBehavior == .copyOnSave {
-                        ClipboardService.shared.copyImage(viewModel.renderedImage())
+                    if clipboardBehavior == .copyOnSave {
+                        ClipboardService.shared.copyImage(image)
                     }
-                    captureVM.showToast(L10n.string("Saved"))
                 }
             }
 

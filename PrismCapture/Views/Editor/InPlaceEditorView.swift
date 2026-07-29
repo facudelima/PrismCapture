@@ -200,17 +200,24 @@ struct InPlaceEditorView: View {
     }
 
     private func save() {
-        if let url = FileService.shared.savePanel(image: annotationVM.renderedImage(), format: settings.imageFormat) {
+        let image = annotationVM.renderedImage()
+        let remoteURL = annotationVM.remoteURL
+        let ocrText = annotationVM.ocrText
+        let format = settings.imageFormat
+        let clipboardBehavior = settings.clipboardBehavior
+
+        OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+
+        if let url = FileService.shared.savePanel(image: image, format: format) {
             HistoryViewModel.shared.add(
-                image: annotationVM.renderedImage(),
+                image: image,
                 fileURL: url,
-                remoteURL: annotationVM.remoteURL,
-                ocrText: annotationVM.ocrText.isEmpty ? nil : annotationVM.ocrText
+                remoteURL: remoteURL,
+                ocrText: ocrText.isEmpty ? nil : ocrText
             )
-            if settings.clipboardBehavior == .copyOnSave {
-                ClipboardService.shared.copyImage(annotationVM.renderedImage())
+            if clipboardBehavior == .copyOnSave {
+                ClipboardService.shared.copyImage(image)
             }
-            captureVM.showToast(L10n.string("Saved"))
         }
     }
 }
