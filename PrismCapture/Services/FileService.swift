@@ -35,6 +35,9 @@ final class FileService {
         panel.nameFieldStringValue = makeFilename(format: format)
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
+        // The editor overlay sits at `.screenSaver` level; without this the panel
+        // opens behind it and is invisible/unreachable.
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
 
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
 
