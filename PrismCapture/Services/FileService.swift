@@ -29,7 +29,10 @@ final class FileService {
         return url
     }
 
-    func savePanel(image: NSImage, format: ImageFormat) -> URL? {
+    /// Shows the panel first and only renders/encodes the image once the user actually
+    /// confirms a destination — rendering (and flattening annotations) upfront added a
+    /// visible delay before the dialog appeared, for no benefit if the user cancels.
+    func savePanel(format: ImageFormat, image: () -> NSImage) -> (url: URL, image: NSImage)? {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: format.fileExtension) ?? .png]
         panel.nameFieldStringValue = makeFilename(format: format)
@@ -41,10 +44,11 @@ final class FileService {
 
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
 
+        let renderedImage = image()
         do {
-            guard let data = image.data(using: format) else { return nil }
+            guard let data = renderedImage.data(using: format) else { return nil }
             try data.write(to: url, options: .atomic)
-            return url
+            return (url, renderedImage)
         } catch {
             return nil
         }

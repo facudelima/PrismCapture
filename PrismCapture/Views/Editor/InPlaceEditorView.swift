@@ -206,15 +206,13 @@ struct InPlaceEditorView: View {
     }
 
     private func save() {
-        let image = annotationVM.renderedImage()
         let remoteURL = annotationVM.remoteURL
         let ocrText = annotationVM.ocrText
         let format = settings.imageFormat
         let clipboardBehavior = settings.clipboardBehavior
 
-        OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
-
-        if let url = FileService.shared.savePanel(image: image, format: format) {
+        if let (url, image) = FileService.shared.savePanel(format: format, image: { annotationVM.renderedImage() }) {
+            OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
             HistoryViewModel.shared.add(
                 image: image,
                 fileURL: url,

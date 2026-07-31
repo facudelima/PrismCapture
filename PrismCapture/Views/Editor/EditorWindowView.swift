@@ -70,10 +70,10 @@ struct EditorWindowView: View {
     }
 
     private func saveImage() {
-        if let url = FileService.shared.savePanel(image: annotationVM.renderedImage(), format: settings.imageFormat) {
-            HistoryViewModel.shared.add(image: annotationVM.renderedImage(), fileURL: url, remoteURL: annotationVM.remoteURL, ocrText: annotationVM.ocrText.isEmpty ? nil : annotationVM.ocrText)
+        if let (url, image) = FileService.shared.savePanel(format: settings.imageFormat, image: { annotationVM.renderedImage() }) {
+            HistoryViewModel.shared.add(image: image, fileURL: url, remoteURL: annotationVM.remoteURL, ocrText: annotationVM.ocrText.isEmpty ? nil : annotationVM.ocrText)
             if settings.clipboardBehavior == .copyOnSave {
-                ClipboardService.shared.copyImage(annotationVM.renderedImage())
+                ClipboardService.shared.copyImage(image)
             }
             captureVM.showToast(L10n.string("Saved"))
             prepareDragItem(url: url)

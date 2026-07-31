@@ -75,15 +75,13 @@ struct EditorToolbarView: View {
                 }
             }
             GlassIconButton(systemName: "square.and.arrow.down", help: L10n.string("Save (⌘S)")) {
-                let image = viewModel.renderedImage()
                 let remoteURL = viewModel.remoteURL
                 let ocrText = viewModel.ocrText
                 let format = settings.imageFormat
                 let clipboardBehavior = settings.clipboardBehavior
 
-                OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
-
-                if let url = FileService.shared.savePanel(image: image, format: format) {
+                if let (url, image) = FileService.shared.savePanel(format: format, image: { viewModel.renderedImage() }) {
+                    OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
                     HistoryViewModel.shared.add(
                         image: image,
                         fileURL: url,
