@@ -530,7 +530,6 @@ struct InlineTextField: NSViewRepresentable {
         context.coordinator.installMonitor(for: field)
         context.coordinator.field = field
         viewModel.activeTextField = field
-        viewModel.editingTextDraft = ""
 
         DispatchQueue.main.async {
             field.window?.makeKeyAndOrderFront(nil)
