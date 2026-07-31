@@ -1,9 +1,9 @@
 import SwiftUI
 
 extension Animation {
-    static let prismSpring = Animation.spring(response: 0.38, dampingFraction: 0.82)
-    static let prismSoft = Animation.spring(response: 0.48, dampingFraction: 0.9)
-    static let prismSnappy = Animation.spring(response: 0.28, dampingFraction: 0.78)
+    static let prismSpring = Animation.spring(response: 0.05, dampingFraction: 1.0)
+    static let prismSoft = Animation.spring(response: 0.09, dampingFraction: 1.0)
+    static let prismSnappy = Animation.spring(response: 0.04, dampingFraction: 1.0)
 }
 
 extension View {
