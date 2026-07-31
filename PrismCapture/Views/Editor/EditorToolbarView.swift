@@ -67,7 +67,12 @@ struct EditorToolbarView: View {
                 if settings.showToastOnCopy {
                     captureVM.showToast(L10n.string("Copied to clipboard"))
                 }
-                OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+                // Defer closing so the toast's @Published change commits before the
+                // window displaying it is torn down (avoids "Publishing changes from
+                // within view updates").
+                DispatchQueue.main.async {
+                    OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+                }
             }
             GlassIconButton(systemName: "square.and.arrow.down", help: L10n.string("Save (⌘S)")) {
                 let image = viewModel.renderedImage()

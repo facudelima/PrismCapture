@@ -242,8 +242,14 @@ final class CaptureViewModel: ObservableObject {
     }
 
     func showToast(_ message: String) {
-        withAnimation(.prismSoft) {
-            toastMessage = message
+        // Callers include copy/save actions fired from onKeyPress/Button handlers under
+        // .focused() — starting a `withAnimation` transaction synchronously from there
+        // re-enters SwiftUI's update pipeline and triggers "Publishing changes from
+        // within view updates". Deferring one tick keeps the transaction outside it.
+        DispatchQueue.main.async { [weak self] in
+            withAnimation(.prismSoft) {
+                self?.toastMessage = message
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { [weak self] in
             withAnimation(.prismSoft) {

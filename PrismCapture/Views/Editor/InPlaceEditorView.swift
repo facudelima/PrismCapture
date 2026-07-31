@@ -181,7 +181,13 @@ struct InPlaceEditorView: View {
         if settings.showToastOnCopy {
             captureVM.showToast(L10n.string("Copied to clipboard"))
         }
-        OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+        // Let the toast's state change commit before tearing down the window that
+        // displays it — closing synchronously in the same pass mutates @Published
+        // state while the view hierarchy observing it is being deallocated, which
+        // SwiftUI flags as "Publishing changes from within view updates".
+        DispatchQueue.main.async {
+            OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+        }
     }
 
     private var toolbarPosition: CGPoint {
