@@ -232,7 +232,21 @@ final class OverlayWindowController {
             matching: [.leftMouseDragged, .leftMouseUp]
         ) { [weak self] event in
             guard let self, let vm = self.selectionViewModel else { return event }
-            let point = self.overlayPointFromMouseLocation()
+            // Use the position carried by *this* event (extrapolated through its own
+            // window, which stays bound to the mouseDown screen across the whole drag —
+            // still correct once the cursor crosses onto another monitor). Falling back
+            // to a live NSEvent.mouseLocation() query here made the selection use a
+            // position sampled *after* this event, not the one it actually represents;
+            // with a fast/high-report-rate external mouse queuing several drag events at
+            // once, that skew was large enough to start the rect in the wrong spot or
+            // collapse it to near-zero size. Trackpads emit few enough, tightly-paced
+            // events that the live query almost always matched, hiding the bug.
+            let point: CGPoint
+            if let window = event.window {
+                point = self.overlayPointFromMouseLocation(window.convertPoint(toScreen: event.locationInWindow))
+            } else {
+                point = self.overlayPointFromMouseLocation()
+            }
             switch event.type {
             case .leftMouseDragged:
                 guard vm.dragKind == .creating || vm.dragKind == .moving else { return event }
