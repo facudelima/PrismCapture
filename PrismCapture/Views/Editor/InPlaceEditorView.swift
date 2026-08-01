@@ -211,8 +211,13 @@ struct InPlaceEditorView: View {
         let format = settings.imageFormat
         let clipboardBehavior = settings.clipboardBehavior
 
+        // Close first: the editor overlay sits at .screenSaver level, joins every Space,
+        // and stays always-on-top — leaving it open for the whole modal save panel
+        // session fights the panel for focus/visibility. `annotationVM` stays alive via
+        // this method's own capture, so the lazy render below still works after closing.
+        OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+
         if let (url, image) = FileService.shared.savePanel(format: format, image: { annotationVM.renderedImage() }) {
-            OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
             HistoryViewModel.shared.add(
                 image: image,
                 fileURL: url,

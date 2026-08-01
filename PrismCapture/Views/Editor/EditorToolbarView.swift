@@ -80,8 +80,11 @@ struct EditorToolbarView: View {
                 let format = settings.imageFormat
                 let clipboardBehavior = settings.clipboardBehavior
 
+                // Close first — see InPlaceEditorView.save() for why (screenSaver-level
+                // overlay fights the modal save panel for focus if left open).
+                OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
+
                 if let (url, image) = FileService.shared.savePanel(format: format, image: { viewModel.renderedImage() }) {
-                    OverlayWindowController.shared.closeInPlaceEditor(copyIfNeeded: false)
                     HistoryViewModel.shared.add(
                         image: image,
                         fileURL: url,
