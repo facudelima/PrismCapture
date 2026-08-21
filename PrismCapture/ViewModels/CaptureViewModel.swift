@@ -177,11 +177,47 @@ final class CaptureViewModel: ObservableObject {
         return r
     }
 
+    /// Backing scale of the display the rect sits on (overlay space is multi-monitor).
+    func backingScale(for rect: CGRect) -> CGFloat {
+        let cocoa = overlay.globalCocoaRect(fromSwiftUI: rect)
+        let center = CGPoint(x: cocoa.midX, y: cocoa.midY)
+        let screen = NSScreen.screens.first { $0.frame.contains(center) } ?? NSScreen.main
+        return screen?.backingScaleFactor ?? 2
+    }
+
+    /// Snaps a selection to whole device pixels.
+    ///
+    /// A drag produces fractional point coordinates, but the capture is rounded to an integer
+    /// pixel count. The in-place editor then pins that bitmap back at the fractional origin, so
+    /// source and destination disagree by a subpixel and the whole preview gets resampled —
+    /// visibly softer than the live screen showing through around it. Snapping first makes the
+    /// pinned bitmap land 1:1 on the pixel grid.
+    /// Pass `within` to keep the snapped rect inside the overlay: rounding can otherwise push
+    /// an edge-hugging selection a fraction of a point off-screen, and the capture's intersection
+    /// with the display would trim it back to a fractional size — undoing the alignment.
+    static func pixelAligned(_ rect: CGRect, scale: CGFloat, within bounds: CGSize? = nil) -> CGRect {
+        let scale = scale > 0 ? scale : 1
+        let snap = { (value: CGFloat) in (value * scale).rounded() / scale }
+        let step = 1 / scale
+        var minX = snap(rect.minX)
+        var minY = snap(rect.minY)
+        let width = max(snap(rect.maxX) - minX, step)
+        let height = max(snap(rect.maxY) - minY, step)
+
+        if let bounds, bounds.width > 0, bounds.height > 0 {
+            // Bounds come from a screen frame, so snapping them keeps the grid alignment.
+            minX = min(max(0, minX), max(0, snap(bounds.width) - width))
+            minY = min(max(0, minY), max(0, snap(bounds.height) - height))
+        }
+        return CGRect(x: minX, y: minY, width: width, height: height)
+    }
+
     func confirmSelection() {
         guard selectionRect.width > 4, selectionRect.height > 4 else { return }
 
-        let pinRect = selectionRect
-        let cocoaRect = overlay.globalCocoaRect(fromSwiftUI: selectionRect)
+        let pinRect = Self.pixelAligned(selectionRect, scale: backingScale(for: selectionRect), within: overlaySize)
+        selectionRect = pinRect
+        let cocoaRect = overlay.globalCocoaRect(fromSwiftUI: pinRect)
 
         let captureBlock = { [weak self] in
             guard let self else { return }

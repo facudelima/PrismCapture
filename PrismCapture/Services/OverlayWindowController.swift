@@ -218,6 +218,14 @@ final class OverlayWindowController {
         installSelectionDragMonitor()
     }
 
+    /// Backing scale of the display the overlay is pinned to (set by `showInPlaceEditor`).
+    /// Used to keep the pinned bitmap aligned to whole device pixels.
+    var overlayBackingScale: CGFloat {
+        let center = CGPoint(x: overlayFrame.midX, y: overlayFrame.midY)
+        let screen = NSScreen.screens.first { $0.frame.contains(center) } ?? NSScreen.main
+        return screen?.backingScaleFactor ?? 2
+    }
+
     /// Converts `NSEvent.mouseLocation` (Cocoa global) into overlay top-left space.
     func overlayPointFromMouseLocation(_ cocoaPoint: CGPoint = NSEvent.mouseLocation) -> CGPoint {
         CGPoint(
@@ -346,7 +354,10 @@ final class OverlayWindowController {
         guard let screen else { return }
 
         overlayFrame = screen.frame
-        let localPin = swiftUIRect(fromGlobalCocoa: cocoaPin)
+        let localPin = CaptureViewModel.pixelAligned(
+            swiftUIRect(fromGlobalCocoa: cocoaPin),
+            scale: screen.backingScaleFactor
+        )
 
         let annotationVM = AnnotationViewModel(image: image, canvasSize: localPin.size)
         editorCancelTextEdit = { [weak annotationVM] in
@@ -430,11 +441,14 @@ final class OverlayWindowController {
             height = maxH
             width = height * aspect
         }
-        let pin = CGRect(
-            x: (overlayFrame.width - width) / 2,
-            y: (overlayFrame.height - height) / 2,
-            width: width,
-            height: height
+        let pin = CaptureViewModel.pixelAligned(
+            CGRect(
+                x: (overlayFrame.width - width) / 2,
+                y: (overlayFrame.height - height) / 2,
+                width: width,
+                height: height
+            ),
+            scale: overlayBackingScale
         )
         // Fullscreen capture: pin is a preview frame — never allow Lightshot-style pan/recapture.
         showInPlaceEditor(image: image, pinRect: pin, captureVM: viewModel, allowsPinMove: false)

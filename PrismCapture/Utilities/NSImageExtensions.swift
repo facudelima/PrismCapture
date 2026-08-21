@@ -4,9 +4,48 @@ import ImageIO
 import UniformTypeIdentifiers
 
 extension NSImage {
+    /// Full-resolution bitmap backing this image.
+    ///
+    /// Goes through the representations first on purpose: `cgImage(forProposedRect:context:hints:)`
+    /// resolves the proposed rect against a 1x device when `context` is nil, so on a 2x capture
+    /// (whose `size` is in points) it can hand back a downscaled copy — which would silently halve
+    /// the resolution of every save, copy and upload.
     var cgImage: CGImage? {
+        let widest = representations
+            .compactMap { $0 as? NSBitmapImageRep }
+            .max { $0.pixelsWide * $0.pixelsHigh < $1.pixelsWide * $1.pixelsHigh }
+        if let cg = widest?.cgImage {
+            return cg
+        }
         var rect = CGRect(origin: .zero, size: size)
         return cgImage(forProposedRect: &rect, context: nil, hints: nil)
+    }
+
+    /// Real bitmap dimensions in device pixels. `size` is in *points*, so on Retina it is
+    /// half of this — every export, crop and annotation-scaling math must use this instead.
+    var pixelSize: CGSize {
+        let widest = representations.map(\.pixelsWide).max() ?? 0
+        let tallest = representations.map(\.pixelsHigh).max() ?? 0
+        guard widest > 0, tallest > 0 else { return size }
+        return CGSize(width: widest, height: tallest)
+    }
+
+    /// Wraps a CGImage keeping its backing scale honest: `size` ends up in points and the
+    /// representation keeps the full pixel count. Building the image with the pixel count as
+    /// its point size instead (the obvious `NSImage(cgImage:size:)`) makes AppKit treat a 2x
+    /// capture as a 1x image, so drawing it at its natural on-screen size resamples the whole
+    /// bitmap and the preview looks softer than the screen behind it.
+    static func fromCGImage(_ cgImage: CGImage, scale: CGFloat) -> NSImage {
+        let scale = scale > 0 ? scale : 1
+        let rep = NSBitmapImageRep(cgImage: cgImage)
+        let pointSize = NSSize(
+            width: CGFloat(cgImage.width) / scale,
+            height: CGFloat(cgImage.height) / scale
+        )
+        rep.size = pointSize
+        let image = NSImage(size: pointSize)
+        image.addRepresentation(rep)
+        return image
     }
 
     func data(using format: ImageFormat, compression: Double = 0.92) -> Data? {
@@ -33,8 +72,9 @@ extension NSImage {
         return mutable as Data
     }
 
+    /// `rect` is in points (same space as `size`).
     func cropped(to rect: CGRect) -> NSImage? {
-        guard let cgImage else { return nil }
+        guard let cgImage, size.width > 0, size.height > 0 else { return nil }
         let scaleX = CGFloat(cgImage.width) / size.width
         let scaleY = CGFloat(cgImage.height) / size.height
         let scaled = CGRect(
@@ -44,16 +84,16 @@ extension NSImage {
             height: rect.height * scaleY
         )
         guard let cropped = cgImage.cropping(to: scaled) else { return nil }
-        return NSImage(cgImage: cropped, size: rect.size)
+        return .fromCGImage(cropped, scale: scaleX)
     }
 
     /// Renders annotations onto a copy of this image via a raw `CGContext` sized to the
-    /// source's actual pixel dimensions. `NSImage.lockFocus()` sizes its offscreen buffer
-    /// using the *point* size and the screen's `backingScaleFactor`, but our captured images
-    /// already carry pixel counts as their `size` (see `CaptureService`), so on Retina
-    /// displays `lockFocus` doubled that again — a full-screen capture ballooned into a
-    /// buffer ~4x its real pixel count, making flatten (and the clipboard copy after it)
-    /// extremely slow.
+    /// source's actual pixel dimensions, and hands back a result with the same backing scale.
+    /// `NSImage.lockFocus()` is avoided here: it sizes its offscreen buffer from the *point*
+    /// size times the screen's `backingScaleFactor`, which is the current display's scale and
+    /// not necessarily the one the capture came from — on a mixed Retina/1080p setup that
+    /// silently rescales the bitmap, and it used to balloon full-screen captures into a buffer
+    /// ~4x their real pixel count, making flatten (and the clipboard copy after it) very slow.
     func flattened(annotations annotate: (CGContext, CGSize) -> Void) -> NSImage {
         guard let cgImage else { return self }
         let width = cgImage.width
@@ -74,6 +114,7 @@ extension NSImage {
         annotate(context, CGSize(width: width, height: height))
 
         guard let outputCGImage = context.makeImage() else { return self }
-        return NSImage(cgImage: outputCGImage, size: size)
+        let scale = size.width > 0 ? CGFloat(width) / size.width : 1
+        return .fromCGImage(outputCGImage, scale: scale)
     }
 }

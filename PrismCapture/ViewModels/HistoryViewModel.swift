@@ -24,8 +24,8 @@ final class HistoryViewModel: ObservableObject {
             filePath: fileURL?.path,
             remoteURL: remoteURL?.absoluteString,
             ocrText: ocrText,
-            width: Int(image.size.width),
-            height: Int(image.size.height)
+            width: Int(image.pixelSize.width),
+            height: Int(image.pixelSize.height)
         )
         items.insert(item, at: 0)
         if items.count > 100 {

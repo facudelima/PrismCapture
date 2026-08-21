@@ -41,10 +41,7 @@ final class CaptureService {
         config.captureResolution = .best
 
         let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-        return NSImage(
-            cgImage: cgImage,
-            size: NSSize(width: cgImage.width, height: cgImage.height)
-        )
+        return .fromCGImage(cgImage, scale: scale)
     }
 
     func listWindows() async -> [(id: CGWindowID, name: String, bounds: CGRect)] {
@@ -127,10 +124,10 @@ final class CaptureService {
 
         let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
 
-        return NSImage(
-            cgImage: cgImage,
-            size: NSSize(width: cgImage.width, height: cgImage.height)
-        )
+        // Scale is carried on the image itself, so `size` stays in points and matches the
+        // region the user selected — the in-place editor can then pin the bitmap over the
+        // real content at exactly 1:1 device pixels instead of resampling it.
+        return .fromCGImage(cgImage, scale: scale)
     }
 
     // MARK: - Helpers

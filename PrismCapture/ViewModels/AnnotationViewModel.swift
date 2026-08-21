@@ -312,7 +312,8 @@ final class AnnotationViewModel: ObservableObject {
         ctx.draw(effect, in: drawRect)
 
         guard let composed = ctx.makeImage() else { return }
-        image = NSImage(cgImage: composed, size: image.size)
+        let backingScale = image.size.width > 0 ? CGFloat(width) / image.size.width : 1
+        image = .fromCGImage(composed, scale: backingScale)
         // Drop any leftover effect annotations; pixels are already baked.
         annotations.removeAll { $0.tool == .blur || $0.tool == .pixelate }
         // Invalidate undo that could restore a pre-censor annotation overlay on old pixels.
@@ -324,8 +325,11 @@ final class AnnotationViewModel: ObservableObject {
 
     func renderedImage() -> NSImage {
         let annotationsSnapshot = annotations
-        let sx = image.size.width / max(canvasSize.width, 1)
-        let sy = image.size.height / max(canvasSize.height, 1)
+        // `flattened` builds its context at the bitmap's pixel size, so annotations laid out
+        // in canvas points must be scaled by the pixel count — not by `image.size`, which is
+        // in points and would leave them at half size on Retina captures.
+        let sx = image.pixelSize.width / max(canvasSize.width, 1)
+        let sy = image.pixelSize.height / max(canvasSize.height, 1)
         return image.flattened { context, size in
             let mirror = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: size.height)
             context.concatenate(mirror)
@@ -337,8 +341,8 @@ final class AnnotationViewModel: ObservableObject {
     }
 
     private func scaleRectToImage(_ rect: CGRect) -> CGRect {
-        let sx = image.size.width / max(canvasSize.width, 1)
-        let sy = image.size.height / max(canvasSize.height, 1)
+        let sx = image.pixelSize.width / max(canvasSize.width, 1)
+        let sy = image.pixelSize.height / max(canvasSize.height, 1)
         return CGRect(
             x: rect.origin.x * sx,
             y: rect.origin.y * sy,

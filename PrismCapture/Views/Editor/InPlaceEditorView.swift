@@ -144,11 +144,15 @@ struct InPlaceEditorView: View {
             recaptureTask?.cancel()
             recaptureToken += 1
         }
-        var next = livePin.offsetBy(dx: delta.width, dy: delta.height)
+        let next = livePin.offsetBy(dx: delta.width, dy: delta.height)
         let overlay = OverlayWindowController.shared.overlayFrame
-        next.origin.x = min(max(0, next.origin.x), max(0, overlay.width - next.width))
-        next.origin.y = min(max(0, next.origin.y), max(0, overlay.height - next.height))
-        livePin = next
+        // Fractional drag deltas would knock the frame off the pixel grid, so the recaptured
+        // bitmap would land on a subpixel boundary and blur again.
+        livePin = CaptureViewModel.pixelAligned(
+            next,
+            scale: OverlayWindowController.shared.overlayBackingScale,
+            within: overlay.size
+        )
     }
 
     private func scheduleRecapture() {
