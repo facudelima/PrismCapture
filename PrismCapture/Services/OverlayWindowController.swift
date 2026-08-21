@@ -427,13 +427,62 @@ final class OverlayWindowController {
         }
     }
 
+    /// Largest preview that still downscales the capture by a simple whole-number pixel ratio.
+    ///
+    /// A fullscreen shot has to shrink to be viewed as a whole, but fitting it to an arbitrary
+    /// fraction of the screen (0.72, which worked out to ~1.745:1) interpolates across pixel
+    /// boundaries and reads as soft next to the desktop behind it. Scaling by a simple fraction
+    /// instead lands the destination on whole device pixels and makes the resample pattern
+    /// repeat every few pixels, which stays crisp.
+    ///
+    /// Requiring the source to divide evenly by the denominator is what keeps that pattern
+    /// uniform: every group of `denominator` source pixels collapses into exactly `numerator`
+    /// destination ones, with no group straddling a boundary.
+    ///
+    /// Candidates are ordered largest-first, so the result is the biggest ratio that both
+    /// divides evenly and fits the budget. Returns nil when none do, leaving the caller's
+    /// aspect-fit size alone.
+    static func cleanRatioPreview(
+        pixels: CGSize,
+        scale: CGFloat,
+        maxWidth: CGFloat,
+        maxHeight: CGFloat
+    ) -> CGSize? {
+        let scale = scale > 0 ? scale : 1
+        let sourceWidth = Int(pixels.width.rounded())
+        let sourceHeight = Int(pixels.height.rounded())
+        guard sourceWidth > 0, sourceHeight > 0 else { return nil }
+
+        // (numerator, denominator), largest first. Denominators stay small so the pattern
+        // repeats often enough to read as uniform rather than as banding.
+        let ratios = [(1, 1), (4, 5), (3, 4), (2, 3), (3, 5), (1, 2), (2, 5), (1, 3), (1, 4), (1, 5)]
+
+        for (numerator, denominator) in ratios {
+            guard sourceWidth % denominator == 0, sourceHeight % denominator == 0 else { continue }
+            let candidate = CGSize(
+                width: CGFloat(sourceWidth / denominator * numerator) / scale,
+                height: CGFloat(sourceHeight / denominator * numerator) / scale
+            )
+            if candidate.width <= maxWidth, candidate.height <= maxHeight {
+                return candidate
+            }
+        }
+        return nil
+    }
+
     func showEditor(image: NSImage, viewModel: CaptureViewModel) {
         let screen = CaptureService.shared.screenUnderMouse() ?? NSScreen.main
         overlayFrame = screen?.frame
             ?? CGRect(x: 0, y: 0, width: 1200, height: 800)
 
-        let maxW = min(overlayFrame.width * 0.72, 1100)
-        let maxH = min(overlayFrame.height * 0.72, 780)
+        // Room the preview may take. Deliberately has no absolute cap: the old `min(…, 1100)`
+        // forced big displays into a much smaller ratio (a 5K shot landed at 25% of the screen),
+        // so a larger monitor now gets a proportionally larger preview instead of a thumbnail.
+        // The headroom over 0.8 is what lets the 4:5 candidate below win on most displays.
+        let maxW = overlayFrame.width * 0.82
+        let maxH = overlayFrame.height * 0.82
+
+        // Aspect-fit is only the fallback — see `integerRatioPreview` for why.
         let aspect = max(image.size.width, 1) / max(image.size.height, 1)
         var width = maxW
         var height = width / aspect
@@ -441,6 +490,16 @@ final class OverlayWindowController {
             height = maxH
             width = height * aspect
         }
+        if let clean = Self.cleanRatioPreview(
+            pixels: image.pixelSize,
+            scale: overlayBackingScale,
+            maxWidth: maxW,
+            maxHeight: maxH
+        ) {
+            width = clean.width
+            height = clean.height
+        }
+
         let pin = CaptureViewModel.pixelAligned(
             CGRect(
                 x: (overlayFrame.width - width) / 2,
